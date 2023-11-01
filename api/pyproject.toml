@@ -13,6 +13,8 @@ pydantic = "^2.4.2"
 mypy = "^1.6.1"
 msoffcrypto-tool = "^5.1.1"
 mangum = "^0.17.0"
+sqlalchemy = "^2.0.22"
+pymysql = "^1.1.0"
 
 
 [build-system]

@@ -33,9 +33,3 @@ Outputs:
   FastJukuBackendApi:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
-  FastJukuBackendFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt FastJukuBackendFunction.Arn
-  FastJukuBackendFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt FastJukuBackendFunctionRole.Arn

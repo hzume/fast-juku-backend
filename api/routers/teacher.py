@@ -8,7 +8,7 @@ async def create_teacher():
 
 @router.get("/teachers")
 async def list_teachers():
-    pass
+    return {"message": "list of teachers"}
 
 @router.get("/teachers/{teacherId}")
 async def mypage():
