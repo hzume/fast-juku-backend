@@ -1,14 +1,24 @@
 from pydantic import BaseModel
 
-class Person(BaseModel):
-    written_name: str
-    fullname: tuple[str, str]
+class PersonBase(BaseModel):
+    display_name: str
+    given_name: str
+    family_name: str
+    school_name: str
 
-class Teacher(Person):
-    hourly_pay: float
-    office_work_hourly_pay: float
-    students_in_charge: list[Person]
-    available_subjects: list[str]
+class Person(PersonBase):
+    id: str
 
-class Student(Person):
-    instructor: Teacher
+class TeacherBase(PersonBase):
+    class_hourly_pay: float
+    office_hourly_pay: float
+    available_subjects: set[str]
+
+class Teacher(TeacherBase):
+    id: str
+
+class StudentBase(PersonBase):
+    instructor_id: str
+
+class Student(StudentBase):
+    id: str

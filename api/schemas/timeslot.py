@@ -1,14 +1,16 @@
 from pydantic import BaseModel
 import datetime
-from person import Student
-
-class Lecture(BaseModel):
-    student: Student
-    subject: str
+from schemas.person import Student
 
 class Timeslot(BaseModel):
     timeslot_type: str
     date: datetime.date
     time: int
+    duration: int
     
+class Lecture(Timeslot):
+    student: Student
+    subject: str
 
+class OfficeWork(Timeslot):
+    pass

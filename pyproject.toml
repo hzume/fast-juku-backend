@@ -12,9 +12,15 @@ fastapi = "^0.103.2"
 pydantic = "^2.4.2"
 mypy = "^1.6.1"
 msoffcrypto-tool = "^5.1.1"
-mangum = "^0.17.0"
+mangum = "0.11.0"
 sqlalchemy = "^2.0.22"
 pymysql = "^1.1.0"
+boto3 = "^1.29.5"
+pynamodb = "^5.5.0"
+pytest = "^7.4.3"
+pytest-mock = "^3.12.0"
+mocker = "^1.1.1"
+moto = "^4.2.9"
 
 
 [build-system]

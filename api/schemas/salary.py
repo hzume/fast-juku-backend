@@ -22,4 +22,3 @@ class AnnualSalary(BaseModel):
 
 
 
-    

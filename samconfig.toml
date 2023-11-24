@@ -18,7 +18,7 @@ confirm_changeset = true
 resolve_s3 = true
 resolve_image_repos = true
 s3_prefix = "fast-juku-backend"
-region = "us-east-1"
+region = "ap-northeast-3"
 
 [default.package.parameters]
 resolve_s3 = true

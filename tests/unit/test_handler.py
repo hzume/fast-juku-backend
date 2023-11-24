@@ -1,7 +1,7 @@
 import json
 
 import pytest
-
+from moto import mock_dynamodb
 from api import main
 
 
@@ -46,7 +46,7 @@ def apigw_event():
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Upgrade-Insecure-Requests": "1",
             "X-Forwarded-Port": "443",
-            "Host": "1234567890.execute-api.us-east-1.amazonaws.com",
+            "Host": "1234567890.execute-api.ap-northeast-3.amazonaws.com",
             "X-Forwarded-Proto": "https",
             "X-Amz-Cf-Id": "aaaaaaaaaae3VYQb9jd-nvCd-de396Uhbp027Y2JvkCPNLmGJHqlaA==",
             "CloudFront-Is-Tablet-Viewer": "false",
@@ -55,10 +55,10 @@ def apigw_event():
             "CloudFront-Forwarded-Proto": "https",
             "Accept-Encoding": "gzip, deflate, sdch",
         },
-        "pathParameters": {"proxy": "/examplepath"},
-        "httpMethod": "POST",
+        "pathParameters": {"proxy": "/hello"},
+        "httpMethod": "GET",
         "stageVariables": {"baz": "qux"},
-        "path": "/examplepath",
+        "path": "/hello",
     }
 
 
