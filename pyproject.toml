@@ -21,8 +21,13 @@ pytest = "^7.4.3"
 pytest-mock = "^3.12.0"
 mocker = "^1.1.1"
 moto = "^4.2.9"
+rich = "^13.7.0"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = "api"
+testpaths = ["tests/unit",]

@@ -1,72 +1,128 @@
+import datetime
 import json
-
+from typing import Iterable
 import pytest
-from moto import mock_dynamodb
 from api import main
-
+from moto import mock_dynamodb
+from api import db
+from api.schemas.person import TeacherBase, Teacher
+from api.schemas.meta import MetaBase, Meta
+from api.schemas.timeslot import TimeslotBase, Timeslot
+from api.cruds.teacher import TeacherRepo
+from api.cruds.meta import MetaRepo
+from api.cruds.timeslot import TimeslotRepo
+from rich import print
 
 @pytest.fixture()
-def apigw_event():
-    """ Generates API GW Event"""
-
+def bases():
+    meta_base = MetaBase(**{
+        "school_name": "test",
+        "timeslot_start_times": [
+            datetime.time(hour=9, minute=0),
+            datetime.time(hour=10, minute=0),
+            datetime.time(hour=11, minute=0),
+            datetime.time(hour=12, minute=0),
+        ],
+        "timeslot_end_times": [
+            datetime.time(hour=10, minute=0),
+            datetime.time(hour=11, minute=0),
+            datetime.time(hour=12, minute=0),
+            datetime.time(hour=13, minute=0),
+        ],
+    })
     return {
-        "body": '{ "test": "body"}',
-        "resource": "/{proxy+}",
-        "requestContext": {
-            "resourceId": "123456",
-            "apiId": "1234567890",
-            "resourcePath": "/{proxy+}",
-            "httpMethod": "POST",
-            "requestId": "c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
-            "accountId": "123456789012",
-            "identity": {
-                "apiKey": "",
-                "userArn": "",
-                "cognitoAuthenticationType": "",
-                "caller": "",
-                "userAgent": "Custom User Agent String",
-                "user": "",
-                "cognitoIdentityPoolId": "",
-                "cognitoIdentityId": "",
-                "cognitoAuthenticationProvider": "",
-                "sourceIp": "127.0.0.1",
-                "accountId": "",
-            },
-            "stage": "prod",
-        },
-        "queryStringParameters": {"foo": "bar"},
-        "headers": {
-            "Via": "1.1 08f323deadbeefa7af34d5feb414ce27.cloudfront.net (CloudFront)",
-            "Accept-Language": "en-US,en;q=0.8",
-            "CloudFront-Is-Desktop-Viewer": "true",
-            "CloudFront-Is-SmartTV-Viewer": "false",
-            "CloudFront-Is-Mobile-Viewer": "false",
-            "X-Forwarded-For": "127.0.0.1, 127.0.0.2",
-            "CloudFront-Viewer-Country": "US",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "Upgrade-Insecure-Requests": "1",
-            "X-Forwarded-Port": "443",
-            "Host": "1234567890.execute-api.ap-northeast-3.amazonaws.com",
-            "X-Forwarded-Proto": "https",
-            "X-Amz-Cf-Id": "aaaaaaaaaae3VYQb9jd-nvCd-de396Uhbp027Y2JvkCPNLmGJHqlaA==",
-            "CloudFront-Is-Tablet-Viewer": "false",
-            "Cache-Control": "max-age=0",
-            "User-Agent": "Custom User Agent String",
-            "CloudFront-Forwarded-Proto": "https",
-            "Accept-Encoding": "gzip, deflate, sdch",
-        },
-        "pathParameters": {"proxy": "/hello"},
-        "httpMethod": "GET",
-        "stageVariables": {"baz": "qux"},
-        "path": "/hello",
+        "meta_base": meta_base
     }
 
 
-def test_lambda_handler(apigw_event, mocker):
+@mock_dynamodb
+def test_lambda_handler(bases):
+    db.DBModelBase.create_table(read_capacity_units=5, write_capacity_units=5, wait=True)
 
-    ret = main.lambda_handler(apigw_event, "")
-    data = json.loads(ret["body"])
+    meta_base = bases["meta_base"]
+    ret = MetaRepo.create(meta_base)
+    print(ret)
+    assert ret.school_id is not None
 
-    assert ret["statusCode"] == 200
-    assert "message" in ret["body"]
-    assert data["message"] == "hello world"
+    meta = MetaRepo.get(ret.school_id)
+    print(meta)
+    assert meta.school_id is not None
+
+    teacher_base = TeacherBase(**{
+        "display_name": "test",
+        "given_name": "test",
+        "family_name": "test",
+        "lecture_hourly_pay": 1000,
+        "office_hourly_pay": 2000,
+        "school_id": meta.school_id,
+    })
+
+    ret = TeacherRepo.create(teacher_base)
+    print(ret)
+    assert ret.id is not None
+
+    ret = TeacherRepo.list(meta.school_id)
+    print(ret)
+    assert len(ret) == 1
+    id = ret[0].id
+
+    teacher = TeacherRepo.get(id)
+    print(teacher)
+    assert teacher.id == id
+
+    timeslot_base = TimeslotBase(**{
+        "id": teacher.id,
+        "school_id": meta.school_id,
+        "timeslot_type": "lecture",
+        "date": datetime.date.fromisoformat("2023-07-14"),
+        "timeslot_number": 1,
+    })
+    ret = TimeslotRepo.create(timeslot_base)
+    print(ret)
+    assert ret.id is not None
+
+
+@pytest.fixture()
+def events():
+    ret = []
+    get_root = {
+        "resource": "/",
+        "path": "/",
+        "httpMethod": "GET",
+        "requestContext": {
+            "Dummy": "Dummy"
+        }
+    }
+    create_teacher = {
+        "resource": "/teachers",
+        "path": "/teachers",
+        "httpMethod": "POST",
+        "requestContext": {
+            "Dummy": "Dummy"
+        },
+        "body": json.dumps({
+            "display_name": "test",
+            "given_name": "test",
+            "family_name": "test",
+            "lecture_hourly_pay": 1000,
+            "office_hourly_pay": 2000,
+            "school_name": "test"
+        })
+    }
+    list_teachers = {
+        "resource": "/teachers",
+        "path": "/teachers",
+        "httpMethod": "GET",
+        "requestContext": {
+            "Dummy": "Dummy"
+        },
+        "queryStringParameters": {
+            "school_name": "test"
+        },
+    }
+    ret = {
+        "get_root": get_root,
+        "create_teacher": create_teacher,
+        "list_teachers": list_teachers
+    }
+    return ret

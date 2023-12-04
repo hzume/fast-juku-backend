@@ -14,47 +14,22 @@ Resources:
     Properties:
       TableName: MainTable
       AttributeDefinitions:
-        - AttributeName: UID
+        - AttributeName: id
           AttributeType: S
-        - AttributeName: Type
+        - AttributeName: record_type
           AttributeType: S
-        - AttributeName: GivenName
-          AttributeType: S
-        - AttributeName: FamilyName
-          AttributeType: S
-        - AttributeName: DisplayName
-          AttributeType: S
-        - AttributeName: SchoolName
-          AttributeType: S
-        - AttributeName: ClassHourlyPay
-          AttributeType: N
-        - AttributeName: OfficeHourlyPay
-          AttributeType: N
-        - AttributeName: OfficeWorkTime
-          AttributeType: N
-        - AttributeName: AvailableSubjects
-          AttributeType: SS
-        - AttributeName: AvailableTimeslots
-          AttributeType: SS  
-        - AttributeName: ClassStudent1UID
-          AttributeType: S
-        - AttributeName: ClassStudent2UID
-          AttributeType: S
-        - AttributeName: ClassSubject1
-          AttributeType: S
-        - AttributeName: ClassSubject2
-          AttributeType: S
-        - AttributeName: InstructorUID
+        - AttributeName: school_name
           AttributeType: S
 
       KeySchema:
-        - AttributeName: UID
-          KeyType: HASH
-        - AttributeName: Type
+        - AttributeName: id
           KeyType: RANGE
+        - AttributeName: record_type
+          KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
+
   FastJukuBackend:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
