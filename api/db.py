@@ -18,6 +18,9 @@ class SchoolIndex(GlobalSecondaryIndex):
 class DBModelBase(Model):
     class Meta:
         table_name = 'main_table'
+        region = 'ap-northeast-3'
+        read_capacity_units = 5
+        write_capacity_units = 5
 
     record_type = UnicodeAttribute(hash_key=True)
     id = UnicodeAttribute(range_key=True)

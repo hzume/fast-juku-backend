@@ -21,8 +21,8 @@ from api.myutils.const import CellBlock, class_times
 router = APIRouter()
 
 # xlsx file upload
-@router.post("/calc_salary/upload_class_sheet")
-async def upload_class_sheet(year: int, month: int, file: UploadFile = File(...), school_id: str = Header(...)):
+@router.post("/timeslots/")
+async def create_timeslots_from_class_sheet(school_id: str, year: int, month: int | None = None, file: UploadFile = File(...)):
     if file.filename == None:
         raise Exception("File name is None")
     
@@ -33,8 +33,8 @@ async def upload_class_sheet(year: int, month: int, file: UploadFile = File(...)
     make_timeslots(wb, school_id, year, month)
     
 
-@router.get("/calc_salary/calculate")
-async def calculate_salary(year: int, month: int | None = None, school_id: str = Header(...)):
+@router.get("/timeslots/{school_id}/calculate/")
+async def calculate_salary(school_id: str, year: int, month: int | None = None):
     teacher_list = TeacherRepo.list(school_id, YearMonth(year=year, month=month))
     timeslot_list = TimeslotRepo.list(school_id, YearMonth(year=year, month=month))
     
@@ -97,7 +97,7 @@ def make_timeslots(
 
             if date.year != year: # type: ignore
                 continue
-             
+
             if (month != None) & (date.month != month): # type: ignore
                 continue
 

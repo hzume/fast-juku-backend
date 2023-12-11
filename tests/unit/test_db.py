@@ -1,3 +1,4 @@
+import copy
 import datetime
 import json
 from pathlib import Path
@@ -15,7 +16,7 @@ from api.schemas.timeslot import Timeslot, TimeslotBase
 from api.cruds.teacher import TeacherRepo
 from api.cruds.meta import MetaRepo
 from api.cruds.timeslot import TimeslotRepo, YearMonth
-from api.routers.calc_salary import make_timeslots
+from api.routers.timeslot import make_timeslots
 
 
 def load_meta(school_name: str) -> Meta:
@@ -34,12 +35,13 @@ def load_timeslot(path: Path, school_id: str, year: int, month: int | None = Non
 
 @mock_dynamodb
 def test_db():
+    setattr(db.DBModelBase.Meta, "host", "http://localhost:8000")
     db.DBModelBase.create_table(read_capacity_units=5, write_capacity_units=5, wait=True)
 
     meta = load_meta("test_school")
     teacher_list = load_teacher_info(Path("tests/data/講師情報.csv"), meta.school_id)
     teacher_dict = {teacher.display_name: teacher.id for teacher in teacher_list} 
-    timeslot_list = load_timeslot(Path("tests/data/2022　新時間割表 10月分.xlsx"), meta.school_id, 2023)
+    timeslot_list = load_timeslot(Path("tests/data/2022　新時間割表 10月分.xlsx"), meta.school_id, 2023, 7)
 
-    print(TeacherRepo.get(teacher_dict["大西浩"]))
-    print(len(timeslot_list))
+    # db.DBModelBase.delete_table()
+

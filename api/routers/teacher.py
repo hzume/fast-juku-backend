@@ -6,7 +6,6 @@ from api.cruds.teacher import TeacherRepo
 
 router = APIRouter()
 
-
 @router.post("/teachers", response_model=Teacher)
 async def create_teacher(teacher_base: TeacherBase):
     teacher = TeacherRepo.create(teacher_base)

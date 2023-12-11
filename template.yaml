@@ -12,23 +12,43 @@ Resources:
   DynamoTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: MainTable
+      TableName: main_table
       AttributeDefinitions:
-        - AttributeName: id
+        - 
+          AttributeName: record_type
           AttributeType: S
-        - AttributeName: record_type
+        - 
+          AttributeName: id
           AttributeType: S
-        - AttributeName: school_name
+        - 
+          AttributeName: school_id
           AttributeType: S
-
       KeySchema:
-        - AttributeName: id
-          KeyType: RANGE
-        - AttributeName: record_type
+        - 
+          AttributeName: record_type
           KeyType: HASH
+        - 
+          AttributeName: id
+          KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
+      GlobalSecondaryIndexes:
+        - 
+          IndexName: school_id_index
+          KeySchema:
+            - 
+              AttributeName: school_id
+              KeyType: HASH
+            - 
+              AttributeName: record_type
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+    
 
   FastJukuBackend:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -38,11 +58,76 @@ Resources:
         - x86_64
       Role: arn:aws:iam::133507509735:role/lambda-apigateway-role
       Events:
-        Root:
+        GetRoot:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /
             Method: get
+        PostRoot:
+          Type: Api
+          Properties:
+            Path: /
+            Method: post
+        CreateTeacher:
+          Type: Api
+          Properties:
+            Path: /teachers
+            Method: post
+        ListTeachers:
+          Type: Api
+          Properties:
+            Path: /teachers/
+            Method: get
+        GetTeacher:
+          Type: Api
+          Properties:
+            Path: /teachers/{teacher_id}
+            Method: get
+        UpdateTeacher:
+          Type: Api
+          Properties:
+            Path: /teachers/{teacher_id}
+            Method: put
+        DeleteTeacher:
+          Type: Api
+          Properties:
+            Path: /teachers/{teacher_id}
+            Method: delete
+        CreateMeta:
+          Type: Api
+          Properties:
+            Path: /metas
+            Method: post
+        ListMetas:
+          Type: Api
+          Properties:
+            Path: /metas
+            Method: get
+        GetMeta:
+          Type: Api
+          Properties:
+            Path: /metas/{school_id}
+            Method: get
+        UpdateMeta:
+          Type: Api
+          Properties:
+            Path: /metas/{school_id}
+            Method: put
+        DeleteMeta:
+          Type: Api
+          Properties:
+            Path: /metas/{school_id}
+            Method: delete
+        CreateTimeslot:
+          Type: Api
+          Properties:
+            Path: /timeslots
+            Method: post
+        CalculateTimeslot:
+          Type: Api
+          Properties:
+            Path: /timeslots/{school_id}/calculate
+            Method: post
         Docs:
           Type: Api
           Properties:

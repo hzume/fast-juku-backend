@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from mangum import Mangum
 
-from api.routers import root, teacher, calc_salary
+from api.routers import root, teacher, timeslot, meta
 
 app = FastAPI()
 app.include_router(root.router)
 app.include_router(teacher.router)
-app.include_router(calc_salary.router)
+app.include_router(timeslot.router)
+app.include_router(meta.router)
 
 lambda_handler = Mangum(app)
 
