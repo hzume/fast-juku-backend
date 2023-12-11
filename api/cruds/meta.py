@@ -1,6 +1,5 @@
-import uuid
-from db import MetaModel
-from schemas.meta import Meta, MetaBase
+from api.db import MetaModel
+from api.schemas.meta import Meta, MetaBase
 
 
 class MetaRepo:

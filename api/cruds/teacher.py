@@ -1,6 +1,6 @@
-from db import TeacherModel
-from schemas.person import Teacher, TeacherBase
-import uuid
+from api.db import TeacherModel
+from api.schemas.person import Teacher, TeacherBase
+from api.myutils.utilfunc import YearMonth
 
 class TeacherRepo:
     @classmethod
@@ -9,14 +9,29 @@ class TeacherRepo:
         regist_teacher = teacher.to_model()
         regist_teacher.save()
         return teacher
+    
+    @classmethod
+    def regist(cls, teacher: Teacher) -> Teacher:
+        regist_teacher = teacher.to_model()
+        regist_teacher.save()
+        return teacher
 
     @classmethod
-    def list(cls, school_id: str) -> list[Teacher]:
-        teachers = [
-            Teacher.from_model(teacher_model) for teacher_model 
-            in TeacherModel.query("teacher", filter_condition = (TeacherModel.school_id==school_id))
-        ]
-        return teachers
+    def list(cls, school_id: str, year_month: YearMonth | None = None) -> list[Teacher]:
+        if year_month != None:
+            assert isinstance(year_month, YearMonth)
+            assert year_month.month != None
+            teachers = [
+                Teacher.from_model(teacher_model) for teacher_model 
+                in TeacherModel.query(f"teacher#{year_month.text}", filter_condition = (TeacherModel.school_id==school_id))
+            ]
+            return teachers
+        else:
+            teachers = [
+                Teacher.from_model(teacher_model) for teacher_model 
+                in TeacherModel.query("teacher", filter_condition = (TeacherModel.school_id==school_id))
+            ]
+            return teachers
 
     @classmethod
     def get(cls, id: str) -> Teacher:
@@ -24,9 +39,9 @@ class TeacherRepo:
         return teacher
 
     @classmethod
-    def update(cls, id, teacher_base: TeacherBase) -> Teacher:
+    def update(cls, id, teacher_base: TeacherBase, year_month: YearMonth | None = None) -> Teacher:
         old_teacher = cls.get(id)
-        new_teacher = old_teacher.update(teacher_base)
+        new_teacher = old_teacher.update(teacher_base, year_month)
         regist_teacher = new_teacher.to_model()
         regist_teacher.save()
         return new_teacher

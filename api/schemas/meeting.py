@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 import datetime 
 
-from schemas.person import Teacher
+from api.schemas.person import Teacher
 
 class MeetingInfo(BaseModel):
     date: datetime.date

@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
-from person import Teacher
-from timeslot import Timeslot
-from meeting import Meeting
+from api.schemas.person import Teacher
+from api.schemas.timeslot import Timeslot
+from api.schemas.meeting import Meeting
 
 class MonthlyAttend(BaseModel):
     teacher: Teacher

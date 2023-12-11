@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from mangum import Mangum
 
-from routers import root, teacher, calc_salary
+from api.routers import root, teacher, calc_salary
 
 app = FastAPI()
 app.include_router(root.router)
