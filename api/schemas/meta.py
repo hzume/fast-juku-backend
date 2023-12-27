@@ -1,9 +1,10 @@
 from typing import Self
-import uuid
+from hashlib import shake_128
 from pydantic import BaseModel
 import datetime
 
 from api.db import MetaModel
+from api.myutils.const import digest_size
 
 class MetaBase(BaseModel):
     school_name: str
@@ -14,7 +15,9 @@ class Meta(MetaBase):
 
     @classmethod
     def create(cls, meta_base: MetaBase) -> Self:
-        school_id = uuid.uuid4().hex
+        shake = shake_128()
+        shake.update(meta_base.school_name.encode("utf-8"))
+        school_id = shake.hexdigest(digest_size)
         return  cls(school_id=school_id, **meta_base.model_dump())
         
     def update(self, meta_base: MetaBase) -> "Meta":

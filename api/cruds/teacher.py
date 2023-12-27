@@ -1,6 +1,9 @@
+from hashlib import shake_128
+
 from api.db import TeacherModel
 from api.schemas.person import Teacher, TeacherBase
 from api.myutils.utilfunc import YearMonth
+from api.myutils.const import digest_size
 
 class TeacherRepo:
     @classmethod
@@ -36,6 +39,12 @@ class TeacherRepo:
     @classmethod
     def get(cls, id: str) -> Teacher:
         teacher = Teacher.from_model(TeacherModel.get("teacher", id))
+        return teacher
+    
+    @classmethod
+    def get_from_sub(cls, sub: str) -> Teacher:
+        teacher_model = TeacherModel.query("teacher", filter_condition = (TeacherModel.sub==sub)).next()
+        teacher = Teacher.from_model(teacher_model)
         return teacher
 
     @classmethod

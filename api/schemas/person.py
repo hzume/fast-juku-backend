@@ -1,10 +1,11 @@
 import datetime
 from typing import Literal, Self
-import uuid
+from hashlib import shake_128
 from pydantic import BaseModel, model_validator
 
 from api.db import TeacherModel
 from api.myutils.utilfunc import YearMonth
+from api.myutils.const import digest_size
 
 class PersonBase(BaseModel):
     display_name: str
@@ -22,7 +23,7 @@ class TeacherBase(PersonBase):
     office_hourly_pay: float
     trans_fee: float = 0.0
     teacher_type: Literal["teacher"]
-
+    sub: str | None = None
 
 class Teacher(TeacherBase):
     id: str
@@ -47,11 +48,16 @@ class Teacher(TeacherBase):
             office_hourly_pay=self.office_hourly_pay,
             trans_fee=self.trans_fee,
             teacher_type=self.teacher_type,
+            sub=self.sub,    
         )
     
     @classmethod
     def create(cls, teacher_base: TeacherBase) -> "Teacher":
-        id = uuid.uuid4().hex
+        shake = shake_128()
+        shake.update(teacher_base.display_name.encode("utf-8"))
+        shake.update(teacher_base.school_id.encode("utf-8"))
+        id = shake.hexdigest(digest_size)
+        
         teacher = Teacher(id=id, **teacher_base.model_dump())
         return teacher
     
@@ -103,4 +109,5 @@ class Teacher(TeacherBase):
             teacher_type=teacher_model.teacher_type, # type: ignore
             year=year,
             month=month,
+            sub=teacher_model.sub,
         )

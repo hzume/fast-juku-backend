@@ -14,6 +14,11 @@ async def get_meta(school_id: str) -> Meta:
     meta = MetaRepo.get(school_id)
     return meta
 
+@router.get("/metas", response_model=list[Meta])
+async def list_metas() -> list[Meta]:
+    metas = MetaRepo.list()
+    return metas
+
 @router.put("/metas/{school_id}", response_model=Meta)
 async def update_meta(school_id: str, meta_base: MetaBase) -> Meta:
     meta = MetaRepo.update(school_id, meta_base)

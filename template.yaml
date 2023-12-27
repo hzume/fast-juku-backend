@@ -49,95 +49,112 @@ Resources:
             ReadCapacityUnits: 5
             WriteCapacityUnits: 5
     
+  FastJukuBackendApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors: 
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+        AllowCredentials: true
+      DefinitionBody:
+        swagger: 2.0
+        info:
+          title:
+            "sam-app-test"
+        schemes:
+        - https
+        paths:
+          /{proxy+}:
+            any:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: '200 response'
+                  headers:
+                    Access-Control-Allow-Origin:
+                        type: string
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: 200
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Origin : "'*'"
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction.Arn}/invocations
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws
 
-  FastJukuBackend:
+  FastJukuBackendFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       PackageType: Image
+      Timeout: 100
       Architectures:
         - x86_64
       Role: arn:aws:iam::133507509735:role/lambda-apigateway-role
       Events:
-        GetRoot:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-          Properties:
-            Path: /
-            Method: get
-        PostRoot:
+        MyApi:
           Type: Api
           Properties:
-            Path: /
-            Method: post
-        CreateTeacher:
-          Type: Api
-          Properties:
-            Path: /teachers
-            Method: post
-        ListTeachers:
-          Type: Api
-          Properties:
-            Path: /teachers/
-            Method: get
-        GetTeacher:
-          Type: Api
-          Properties:
-            Path: /teachers/{teacher_id}
-            Method: get
-        UpdateTeacher:
-          Type: Api
-          Properties:
-            Path: /teachers/{teacher_id}
-            Method: put
-        DeleteTeacher:
-          Type: Api
-          Properties:
-            Path: /teachers/{teacher_id}
-            Method: delete
-        CreateMeta:
-          Type: Api
-          Properties:
-            Path: /metas
-            Method: post
-        ListMetas:
-          Type: Api
-          Properties:
-            Path: /metas
-            Method: get
-        GetMeta:
-          Type: Api
-          Properties:
-            Path: /metas/{school_id}
-            Method: get
-        UpdateMeta:
-          Type: Api
-          Properties:
-            Path: /metas/{school_id}
-            Method: put
-        DeleteMeta:
-          Type: Api
-          Properties:
-            Path: /metas/{school_id}
-            Method: delete
-        CreateTimeslot:
-          Type: Api
-          Properties:
-            Path: /timeslots
-            Method: post
-        CalculateTimeslot:
-          Type: Api
-          Properties:
-            Path: /timeslots/{school_id}/calculate
-            Method: post
-        Docs:
-          Type: Api
-          Properties:
-            Path: /docs
-            Method: get
-        DocsJson:
-          Type: Api
-          Properties:
-            Path: /openapi.json
-            Method: get
+            Path: /{proxy+}
+            Method: any
+            RestApiId: !Ref FastJukuBackendApi
+        # Root:
+        #   Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+        #   Properties:
+        #     Path: /
+        #     Method: get, post, options
+        # Teachers:
+        #   Type: Api
+        #   Properties:
+        #     Path: /teachers
+        #     Method: post, get, options
+        # CreateTeachersFromCsv:
+        #   Type: Api
+        #   Properties:
+        #     Path: /teachers/bulk
+        #     Method: post, options
+        # Teacher:
+        #   Type: Api
+        #   Properties:
+        #     Path: /teachers/{teacher_id}
+        #     Method: get, put, delete, options
+        # Metas:
+        #   Type: Api
+        #   Properties:
+        #     Path: /metas
+        #     Method: get, post, options
+        # Meta:
+        #   Type: Api
+        #   Properties:
+        #     Path: /metas/{school_id}
+        #     Method: get, put, delete, options
+        # Timeslots:
+        #   Type: Api
+        #   Properties:
+        #     Path: /timeslots
+        #     Method: post, options
+        # CalculateTimeslot:
+        #   Type: Api
+        #   Properties:
+        #     Path: /timeslots/{school_id}/calculate
+        #     Method: post, options
+        # Docs:
+        #   Type: Api
+        #   Properties:
+        #     Path: /docs
+        #     Method: get, options
+        # DocsJson:
+        #   Type: Api
+        #   Properties:
+        #     Path: /openapi.json
+        #     Method: get, options
     Metadata:
       Dockerfile: Dockerfile
       DockerContext: ./
@@ -147,6 +164,6 @@ Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  FastJukuBackendApi:
+  FastJukuBackend:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"

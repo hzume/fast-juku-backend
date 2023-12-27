@@ -1,6 +1,6 @@
 import datetime
 from pynamodb.models import Model
-from pynamodb.indexes import GlobalSecondaryIndex, AllProjection, IncludeProjection
+from pynamodb.indexes import LocalSecondaryIndex, GlobalSecondaryIndex, AllProjection, IncludeProjection
 from pynamodb.attributes import UnicodeAttribute, NumberAttribute, UTCDateTimeAttribute, UnicodeSetAttribute, BooleanAttribute, MapAttribute, ListAttribute, DiscriminatorAttribute
 
 
@@ -15,10 +15,21 @@ class SchoolIndex(GlobalSecondaryIndex):
     record_type = UnicodeAttribute(range_key=True)
 
 
+class SubIndex(LocalSecondaryIndex):
+    class Meta:
+        index_name = 'sub_index'
+        read_capacity_units = 5
+        write_capacity_units = 5
+        projection = AllProjection()
+
+    record_type = UnicodeAttribute(hash_key=True)
+    sub = UnicodeAttribute(range_key=True)
+
 class DBModelBase(Model):
     class Meta:
         table_name = 'main_table'
         region = 'ap-northeast-3'
+        host = "http://dynamodb:8000"
         read_capacity_units = 5
         write_capacity_units = 5
 
@@ -27,6 +38,7 @@ class DBModelBase(Model):
     school_id = UnicodeAttribute()
     cls = DiscriminatorAttribute()
     school_id_index = SchoolIndex()
+    sub_index = SubIndex()
     timestamp = UnicodeAttribute()
 
     
@@ -41,6 +53,8 @@ class DBModelBase(Model):
     end_time = UnicodeAttribute(null=True)
 
     school_name = UnicodeAttribute(null=True)
+    
+    sub = UnicodeAttribute(null=True)
 
 
 # record_type = "timeslot#2023-07-14#1"
@@ -71,6 +85,8 @@ class TeacherModel(DBModelBase, discriminator="teacher"):
     office_hourly_pay = NumberAttribute()
     trans_fee = NumberAttribute()
     teacher_type = UnicodeAttribute()
+
+    sub = UnicodeAttribute(null=True)
     
     year = NumberAttribute(null=True)
     month = NumberAttribute(null=True)

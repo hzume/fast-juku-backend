@@ -1,12 +1,13 @@
 from types import NoneType
-from fastapi import APIRouter, File, UploadFile, Header
+from typing import Any
+from fastapi import APIRouter, Body, File, Request, UploadFile, Header
 import openpyxl as xl
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.cell.cell import Cell
-from io import BytesIO
 from unicodedata import normalize
 import datetime
 import re
+from pydantic import BaseModel
 
 from api.schemas.person import Teacher
 from api.schemas.timeslot import TimeslotBase, Timeslot
@@ -20,18 +21,16 @@ from api.myutils.const import CellBlock, class_times
 
 router = APIRouter()
 
+class XlsxData(BaseModel):
+    content: list[Any]
+
 # xlsx file upload
 @router.post("/timeslots/")
-async def create_timeslots_from_class_sheet(school_id: str, year: int, month: int | None = None, file: UploadFile = File(...)):
-    if file.filename == None:
-        raise Exception("File name is None")
-    
-    if not file.filename.endswith(".xlsx"): #type: ignore
-        raise Exception("File type not supported")
+async def create_timeslots_from_class_sheet(xlsx_data: XlsxData, school_id: str, year: int, month: int | None = None):
+    timelost_list = make_timeslots(xlsx_data, school_id, year, month)
+    return len(timelost_list)
+    # return "success"
 
-    wb = xl.load_workbook(filename=BytesIO(await file.read()), data_only=True)
-    make_timeslots(wb, school_id, year, month)
-    
 
 @router.get("/timeslots/{school_id}/calculate/")
 async def calculate_salary(school_id: str, year: int, month: int | None = None):
@@ -40,7 +39,7 @@ async def calculate_salary(school_id: str, year: int, month: int | None = None):
     
 
 def make_timeslots(
-        wb: xl.Workbook, 
+        xlsx_data: XlsxData,
         school_id: str,
         year: int,
         month: int | None = None,
@@ -49,124 +48,103 @@ def make_timeslots(
     teacher_list = TeacherRepo.list(school_id)
     if month != None:
         [TeacherRepo.update(teacher.id, teacher.get_base(), YearMonth(year=year, month=month)) for teacher in teacher_list]
-        ws_list = [wb[ws_name] for ws_name in wb.sheetnames if normalize("NFKC" , ws_name).startswith(f"{month}月")]
-    else:
-        ws_list = [wb[ws_name] for ws_name in wb.sheetnames]
     
     teacher_dict = {teacher.display_name: teacher.id for teacher in teacher_list}
     
     timeslot_list = []
-    for ws in ws_list:
-        date = None
-        for i in range(CellBlock.MAX_BLOCKS_ROW):
-            date_cell: datetime.date | int | None = ws.cell(
-                row = i * CellBlock.BLOCK_SIZE + CellBlock.INFO_DATE_IDX, 
-                column = CellBlock.INFO_COL
-            ).value # type: ignore
+    date = None
+    for block_row in xlsx_data.content:
+        date_cell: datetime.date | int | None = block_row[CellBlock.INFO_DATE_IDX][CellBlock.INFO_COL]
+        timeslot_num_cell: str | int | None = block_row[CellBlock.INFO_TIMESLOTNUM_IDX][CellBlock.INFO_COL]
+        time_cell: str | None = block_row[CellBlock.INFO_TIME_IDX][CellBlock.INFO_COL]
 
-            timeslot_num_cell: str | int | None = ws.cell(
-                row = i * CellBlock.BLOCK_SIZE + CellBlock.INFO_TIMESLOTNUM_IDX, 
-                column = CellBlock.INFO_COL
-            ).value # type: ignore
+        if type(date_cell) not in [datetime.date, int, NoneType]:
+            continue
+        
+        if type(timeslot_num_cell) not in [str, int, NoneType]:
+            raise Exception(f"timeslot_num_cell type is {type(timeslot_num_cell)}")
+        
+        if type(time_cell) not in [str, NoneType]:
+            raise Exception(f"time_cell type is {type(time_cell)}")
+        
+        
+        if (timeslot_num_cell == None) | (time_cell == None):
+            continue
 
-            time_cell: str | None = ws.cell(
-                row = i * CellBlock.BLOCK_SIZE + CellBlock.INFO_TIME_IDX, 
-                column = CellBlock.INFO_COL
-            ).value # type: ignore
-
-            if type(date_cell) not in [datetime.date, int, NoneType]:
-                continue
-            
-            if type(timeslot_num_cell) not in [str, int, NoneType]:
-                raise Exception(f"timeslot_num_cell type is {type(timeslot_num_cell)}")
-            
-            if type(time_cell) not in [str, NoneType]:
-                raise Exception(f"time_cell type is {type(time_cell)}")
-            
-            
-            if (timeslot_num_cell == None) | (time_cell == None):
-                continue
-
-            # 日付を更新
-            if date_cell != None:
-                date = normalize_date(date_cell) # type: ignore
-            
+        # 日付を更新
+        if date_cell != None:
+            date = normalize_date(date_cell) # type: ignore
+        
+    
+        match date:
             # 更新後の日付がNoneの場合はスキップ
-            if date == None:
+            case None:
                 continue
-
-            if date.year != year: # type: ignore
-                continue
-
-            if (month != None) & (date.month != month): # type: ignore
-                continue
-
-            timeslot_num = get_timeslot_num(time_cell) # type: ignore
-            start_time, end_time = normalize_time(date, time_cell) # type: ignore
-
-            # timeslot_baseを作成
-            timeslot_base_lecture = TimeslotBase(
-                school_id=school_id,
-                date=date, # type: ignore
-                timeslot_number=timeslot_num,
-                timeslot_type="lecture",
-                start_time=start_time,
-                end_time=end_time
-            )
-
-            for j in range(CellBlock.MAX_BLOCKS_COL):
-                display_name: str | None = ws.cell(
-                    row = i * CellBlock.BLOCK_SIZE + CellBlock.BLOCK_NAME_IDX, 
-                    column = CellBlock.INFO_COL + 1 + j
-                ).value # type: ignore
-
-                cell1: str | None = ws.cell(
-                    row = i * CellBlock.BLOCK_SIZE + CellBlock.BLOCK_CELL1_IDX, 
-                    column = CellBlock.INFO_COL + 1 + j
-                ).value # type: ignore
-
-                cell2: str | None = ws.cell(
-                    row = i * CellBlock.BLOCK_SIZE + CellBlock.BLOCK_CELL2_IDX, 
-                    column = CellBlock.INFO_COL + 1 + j
-                ).value # type: ignore
-
-                if type(display_name) not in [str, NoneType]:
-                    raise Exception(f"display_name type is {type(display_name)}")
-                
-                if type(cell1) not in [str, NoneType]:
-                    raise Exception(f"cell1 type is {type(cell1)}")
-                
-                if type(cell2) not in [str, NoneType]:
-                    raise Exception(f"cell2 type is {type(cell2)}")
-                           
-                # 講師名がNoneであれば無視
-                if display_name == None:
+            case datetime.date:
+                if date.year != year:
                     continue
 
-                # cellが二つともNoneであれば無視
-                if (cell1 == None) and (cell2 == None):
-                    continue
+        if (month != None) & (date.month != month):
+            continue
 
-                # 講師名がteacher_dictになければ無視
-                if display_name not in teacher_dict:
-                    continue
+        timeslot_num = get_timeslot_num(time_cell) # type: ignore
+        start_time, end_time = normalize_time(date, time_cell) # type: ignore
 
-                teacher_id = teacher_dict[display_name]
-                officework_end_time = get_officework_end_time(start_time, end_time, cell1, cell2)
-                if officework_end_time != None:
-                    timeslot_base_office = TimeslotBase(
-                        school_id=school_id,
-                        date=date, # type: ignore
-                        timeslot_number=0,
-                        timeslot_type="office_work",
-                        start_time=start_time,
-                        end_time=officework_end_time # type: ignore
-                    )
-                    timeslot = TimeslotRepo.create(teacher_id, timeslot_base_office)
-                else:
-                    timeslot = TimeslotRepo.create(teacher_id, timeslot_base_lecture)          
-                
-                timeslot_list.append(timeslot)
+        # timeslot_baseを作成
+        timeslot_base_lecture = TimeslotBase(
+            school_id=school_id,
+            date=date, # type: ignore
+            timeslot_number=timeslot_num,
+            timeslot_type="lecture",
+            start_time=start_time,
+            end_time=end_time
+        )
+
+        for j in range(CellBlock.INFO_COL + 1, len(block_row[0])):
+            display_name: str | None = block_row[CellBlock.BLOCK_NAME_IDX][j]
+
+            cell1: str | None = block_row[CellBlock.BLOCK_CELL1_IDX][j]
+
+            cell2: str | None = block_row[CellBlock.BLOCK_CELL2_IDX][j]
+
+            if type(display_name) not in [str, NoneType]:
+                raise Exception(f"display_name type is {type(display_name)}")
+            
+            if type(cell1) not in [str, NoneType]:
+                raise Exception(f"cell1 type is {type(cell1)}")
+            
+            if type(cell2) not in [str, NoneType]:
+                raise Exception(f"cell2 type is {type(cell2)}")
+                        
+            # 講師名がNoneであれば無視
+            if display_name == None:
+                continue
+
+            # cellが二つともNoneであれば無視
+            if (cell1 == None) and (cell2 == None):
+                continue
+
+            # 講師名がteacher_dictになければ無視
+            if display_name not in teacher_dict:
+                continue
+
+            teacher_id = teacher_dict[display_name]
+            officework_end_time = get_officework_end_time(start_time, end_time, cell1, cell2)
+            if officework_end_time != None:
+                timeslot_base_office = TimeslotBase(
+                    school_id=school_id,
+                    date=date, # type: ignore
+                    timeslot_number=0,
+                    timeslot_type="office_work",
+                    start_time=start_time,
+                    end_time=officework_end_time # type: ignore
+                )
+                timeslot = TimeslotRepo.create(teacher_id, timeslot_base_office)
+            else:
+                timeslot = TimeslotRepo.create(teacher_id, timeslot_base_lecture)          
+            
+            timeslot_list.append(timeslot)
+           
     return timeslot_list
 
                 
