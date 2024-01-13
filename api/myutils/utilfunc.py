@@ -55,3 +55,8 @@ def get_start_end_time(time: str) -> tuple[datetime.time, datetime.time]:
     start_time = datetime.datetime.strptime(start_time_str, "%H:%M").time()
     end_time = datetime.datetime.strptime(end_time_str, "%H:%M").time()
     return start_time, end_time
+
+def time_str_2_datetime(year:int, month:int, day:int, time_str: str) -> datetime.datetime:
+    time = datetime.datetime.strptime(time_str, "%H:%M").time()
+    return datetime.datetime(year, month, day, time.hour, time.minute)
+    

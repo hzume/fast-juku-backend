@@ -1,66 +1,78 @@
 import datetime
 from typing import Optional
+import pandas as pd
 from pydantic import BaseModel, field_validator
 from functools import singledispatch
+from api.myutils.const import GENSEN_PATH
 
-from api.schemas.timeslot import Timeslot, TimeslotBase
-from api.db import TimeslotModel
-from api.cruds.meta import MetaRepo
-from api.cruds.teacher import TeacherRepo
-from api.myutils.utilfunc import YearMonth
+from api.schemas.timeslot import MonthlyAttendance, Timeslot, UpdateTimeslotsReq
+from api.db import MonthlyAttendanceModel
 
 
-class TimeslotRepo: 
+class MonthlyAttendanceRepo:
     @classmethod
-    def create(cls, id: str, timeslot_base: TimeslotBase) -> Timeslot:
-        timeslot = Timeslot.create(id, timeslot_base)
-        regist_timeslot = timeslot.to_model()
-        regist_timeslot.save()
-        return timeslot
-    
+    def create(cls, monthly_attendance: MonthlyAttendance) -> MonthlyAttendance:
+        gensen = pd.read_csv(GENSEN_PATH)
+        monthly_attendance = monthly_attendance.calc_salary(gensen)
+        monthly_attendance.to_model().save()
+        return monthly_attendance
+
     @classmethod
-    def list_by_teacher(cls, school_id: str, teacher_id: str, year_month: YearMonth) -> list[Timeslot]:
-        record_type = f"timeslot#{year_month.text}"
-        timeslots = [
-            Timeslot.from_model(timeslot_model) for timeslot_model
-            in TimeslotModel.school_id_index.query(school_id, TimeslotModel.record_type.startswith(record_type), (TimeslotModel.id == teacher_id))
+    def create_list(
+        cls, monthly_attendance_list: list[MonthlyAttendance]
+    ) -> list[MonthlyAttendance]:
+        gensen = pd.read_csv(GENSEN_PATH)
+        monthly_attendance_list = [
+            monthly_attendance.calc_salary(gensen)
+            for monthly_attendance in monthly_attendance_list
         ]
-        return timeslots
+        for monthly_attendance in monthly_attendance_list:
+            monthly_attendance.to_model().save()
+        return monthly_attendance_list
 
     @classmethod
-    def list(cls, school_id: str, year_month: YearMonth) -> list[Timeslot]:
-        record_type = f"timeslot#{year_month.text}"
-        timeslots = [
-            Timeslot.from_model(timeslot_model) for timeslot_model
-            in TimeslotModel.school_id_index.query(school_id, TimeslotModel.record_type.startswith(record_type))
+    def get(cls, id: str, year: int, month: int) -> MonthlyAttendance:
+        record_type = f"attendance#{year}-{month:02}"
+        monthly_attendance_model = MonthlyAttendanceModel.get(record_type, id)
+        return MonthlyAttendance.from_model(monthly_attendance_model)
+
+    @classmethod
+    def list_monthly(
+        cls, school_id: str, year: int, month: int | None = None
+    ) -> list[MonthlyAttendance]:
+        if month == None:
+            record_type = f"attendance#{year}"
+        else:
+            record_type = f"attendance#{year}-{month:02}"
+        monthly_attendance_model_list = MonthlyAttendanceModel.school_id_index.query(
+            school_id, MonthlyAttendanceModel.record_type.startswith(record_type)
+        )
+        return [
+            MonthlyAttendance.from_model(monthly_attendance_model)
+            for monthly_attendance_model in monthly_attendance_model_list
         ]
-        return timeslots
-  
-    @classmethod
-    def get(cls, id: str, date: datetime.date, timeslot_number: int) -> Timeslot:
-        record_type = f"timeslot#{date}#{timeslot_number}"
-        timeslot = Timeslot.from_model(TimeslotModel.get(record_type, id))
-        return timeslot
 
     @classmethod
-    def get_from_base(cls, id: str, timeslot_base: TimeslotBase) -> Timeslot:
-        return cls.get(id, timeslot_base.date, timeslot_base.timeslot_number)
+    def update(
+        cls, id: str, year: int, month: int, req: UpdateTimeslotsReq
+    ) -> MonthlyAttendance:
+        gensen = pd.read_csv(GENSEN_PATH)
+        monthly_attendance = cls.get(id, year, month).update(req).calc_salary(gensen)
+        monthly_attendance.to_model().save()
+        return monthly_attendance
 
     @classmethod
-    def update(cls, id: str, timeslot_base: TimeslotBase) -> Timeslot:
-        old_timeslot = cls.get_from_base(id, timeslot_base)
-        new_timeslot = old_timeslot.update(timeslot_base)
-        regist_timeslot = new_timeslot.to_model()
-        regist_timeslot.save()
-        return new_timeslot
+    def delete(cls, id: str, year: int, month: int) -> MonthlyAttendance:
+        record_type = f"attendance#{year}-{month:02}"
+        monthly_attendance_model = MonthlyAttendanceModel.get(record_type, id)
+        monthly_attendance_model.delete()
+        return MonthlyAttendance.from_model(monthly_attendance_model)
 
     @classmethod
-    def delete(cls, id: str, date: datetime.date, timeslot_number: int):
-        timeslot = cls.get(id, date, timeslot_number)
-        timeslot_model = timeslot.to_model()
-        timeslot_model.delete()
-        return timeslot
-    
-    @classmethod
-    def delete_from_base(cls, id: str, timeslot_base: TimeslotBase):
-        return cls.delete(id, timeslot_base.date, timeslot_base.timeslot_number)
+    def delete_list(
+        cls, school_id: str, year: int, month: int
+    ) -> list[MonthlyAttendance]:
+        monthly_attendance_list = cls.list_monthly(school_id, year, month)
+        for monthly_attendance in monthly_attendance_list:
+            monthly_attendance.to_model().delete()
+        return monthly_attendance_list

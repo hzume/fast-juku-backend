@@ -3,9 +3,10 @@ from typing import Literal, Self
 from hashlib import shake_128
 from pydantic import BaseModel, model_validator
 
-from api.db import TeacherModel
+from api.db import MonthlyAttendanceModel, TeacherModel
 from api.myutils.utilfunc import YearMonth
-from api.myutils.const import digest_size
+from api.myutils.const import DIGEST_SIZE
+
 
 class PersonBase(BaseModel):
     display_name: str
@@ -25,18 +26,9 @@ class TeacherBase(PersonBase):
     teacher_type: Literal["teacher"]
     sub: str | None = None
 
+
 class Teacher(TeacherBase):
     id: str
-    year: int | None = None
-    month: int | None = None
-
-    @model_validator(mode="after")
-    def check_year_month(self):
-        if (self.year == None) & (self.month != None):
-            raise ValueError("year must be specified if month is specified")
-        elif (self.year != None) & (self.month == None):
-            raise ValueError("month must be specified if year is specified")
-        return self
 
     def get_base(self) -> TeacherBase:
         return TeacherBase(
@@ -48,55 +40,31 @@ class Teacher(TeacherBase):
             office_hourly_pay=self.office_hourly_pay,
             trans_fee=self.trans_fee,
             teacher_type=self.teacher_type,
-            sub=self.sub,    
+            sub=self.sub,
         )
-    
+
     @classmethod
     def create(cls, teacher_base: TeacherBase) -> "Teacher":
         shake = shake_128()
         shake.update(teacher_base.display_name.encode("utf-8"))
         shake.update(teacher_base.school_id.encode("utf-8"))
-        id = shake.hexdigest(digest_size)
-        
+        id = shake.hexdigest(DIGEST_SIZE)
+
         teacher = Teacher(id=id, **teacher_base.model_dump())
         return teacher
-    
-    def update(self, teacher_base: TeacherBase, year_month: YearMonth | None = None) -> "Teacher":
-        match year_month:
-            case YearMonth():
-                return Teacher(id=self.id, year=year_month.year, month=year_month.month, **teacher_base.model_dump())
-            case None:
-                return Teacher(id=self.id, **teacher_base.model_dump())
-    
+
+    def update(self, teacher_base: TeacherBase) -> "Teacher":
+        return Teacher(id=self.id, **teacher_base.model_dump())
+
     def to_model(self) -> TeacherModel:
-        match self.year:
-            case int():
-                return TeacherModel(
-                    record_type=f"teacher#{self.year}-{self.month}",
-                    timestamp=datetime.datetime.now().isoformat(),
-                    **self.model_dump()
-                )
-            case None:
-                return TeacherModel(
-                    record_type="teacher",
-                    timestamp=datetime.datetime.now().isoformat(),
-                    **self.model_dump()
-                )
-    
+        return TeacherModel(
+            record_type="teacher",
+            timestamp=datetime.datetime.now().isoformat(),
+            **self.model_dump(),
+        )
+
     @classmethod
     def from_model(cls, teacher_model: TeacherModel) -> "Teacher":
-        match teacher_model.year:
-            case float():
-                year = int(teacher_model.year)
-            case None:
-                year = None
-
-        match teacher_model.month:
-            case float():
-                month = int(teacher_model.month)
-            case None:
-                month = None
-
         return Teacher(
             id=teacher_model.id,
             display_name=teacher_model.display_name,
@@ -106,8 +74,21 @@ class Teacher(TeacherBase):
             lecture_hourly_pay=teacher_model.lecture_hourly_pay,
             office_hourly_pay=teacher_model.office_hourly_pay,
             trans_fee=teacher_model.trans_fee,
-            teacher_type=teacher_model.teacher_type, # type: ignore
-            year=year,
-            month=month,
+            teacher_type=teacher_model.teacher_type,  # type: ignore
             sub=teacher_model.sub,
+        )
+    
+    @classmethod
+    def from_model_monthly(cls, monthly_timeslot_list: MonthlyAttendanceModel) -> "Teacher":
+        return Teacher(
+            id=monthly_timeslot_list.id,
+            display_name=monthly_timeslot_list.display_name,
+            given_name=monthly_timeslot_list.given_name,
+            family_name=monthly_timeslot_list.family_name,
+            school_id=monthly_timeslot_list.school_id,
+            lecture_hourly_pay=monthly_timeslot_list.lecture_hourly_pay,
+            office_hourly_pay=monthly_timeslot_list.office_hourly_pay,
+            trans_fee=monthly_timeslot_list.trans_fee,
+            teacher_type=monthly_timeslot_list.teacher_type,  # type: ignore
+            sub=monthly_timeslot_list.sub,
         )

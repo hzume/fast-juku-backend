@@ -13,7 +13,7 @@ async def create_teacher(teacher_base: TeacherBase):
     teacher = TeacherRepo.create(teacher_base)
     return teacher
 
-@router.post("/teachers/bulk", response_model=list[Teacher])
+@router.post("/teachers/bulk/{school_id}", response_model=list[Teacher])
 async def create_teachers_from_csv(school_id: str, file: UploadFile = File(...)):
     buffer = BytesIO(await file.read())
     df = pd.read_csv(buffer)
@@ -22,7 +22,7 @@ async def create_teachers_from_csv(school_id: str, file: UploadFile = File(...))
            for v in df.to_dict(orient="index").values()]
     return ret
 
-@router.get("/teachers", response_model=list[Teacher])
+@router.get("/teachers/bulk/{school_id}", response_model=list[Teacher])
 async def list_teachers(school_id: str):
     teachers = TeacherRepo.list(school_id)
     return teachers
@@ -42,7 +42,7 @@ async def update_teacher(id: str, teacher_base: TeacherBase):
     teacher = TeacherRepo.update(id, teacher_base)
     return teacher
 
-@router.delete("/teachers/{id}")
+@router.delete("/teachers/{id}", response_model=Teacher)
 async def delete_teacher(id: str):
     ret = TeacherRepo.delete(id)
     return ret

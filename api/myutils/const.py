@@ -12,12 +12,28 @@ class CellBlock:
     INFO_TIMESLOTNUM_IDX = 1
     INFO_TIME_IDX = 2
 
-digest_size = 10
+DIGEST_SIZE = 10
+
+PREPARE_TIME = 10 # 10分
     
-class_times = {
+LECTURE_TIMES_TO_NUMBER = {
         "2:00-3:20":1, 
         "3:30-4:50":2, 
         "5:00-6:20":3, 
         "6:30-7:50":4, 
         "8:00-9:20":5
     }
+
+GENSEN_PATH = "api/data/gensen-r5.csv"
+
+class Payslip:
+    YEAR_CELL = "F2"
+    MONTH_CELL = "H2"
+
+    SCHOOL_NAME = "E5"
+    FULL_NAME = "H5"
+
+    TIMESLOT_START_ROW = "9"
+    TIMESLOT_START_COL = "3"
+
+    

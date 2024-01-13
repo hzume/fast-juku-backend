@@ -7,8 +7,8 @@ from pynamodb.attributes import UnicodeAttribute, NumberAttribute, UTCDateTimeAt
 class SchoolIndex(GlobalSecondaryIndex):
     class Meta:
         index_name = 'school_id_index'
-        read_capacity_units = 5
-        write_capacity_units = 5
+        read_capacity_units = 25
+        write_capacity_units = 25
         projection = AllProjection()
 
     school_id = UnicodeAttribute(hash_key=True)
@@ -18,8 +18,8 @@ class SchoolIndex(GlobalSecondaryIndex):
 class SubIndex(LocalSecondaryIndex):
     class Meta:
         index_name = 'sub_index'
-        read_capacity_units = 5
-        write_capacity_units = 5
+        read_capacity_units = 25
+        write_capacity_units = 25
         projection = AllProjection()
 
     record_type = UnicodeAttribute(hash_key=True)
@@ -29,9 +29,9 @@ class DBModelBase(Model):
     class Meta:
         table_name = 'main_table'
         region = 'ap-northeast-3'
-        host = "http://dynamodb:8000"
-        read_capacity_units = 5
-        write_capacity_units = 5
+        
+        read_capacity_units = 25
+        write_capacity_units = 25
 
     record_type = UnicodeAttribute(hash_key=True)
     id = UnicodeAttribute(range_key=True)
@@ -60,23 +60,44 @@ class DBModelBase(Model):
 # record_type = "timeslot#2023-07-14#1"
 # id = UID
 # ある講師が2023年7月14日の1限目に担当する講義など
-class TimeslotModel(DBModelBase, discriminator="timeslot"):
-    year = NumberAttribute()
-    month = NumberAttribute()
+class TimeslotMap(MapAttribute):
     day = NumberAttribute()
-    timeslot_number = NumberAttribute()
-
-    timeslot_type = UnicodeAttribute()
     start_time = UnicodeAttribute()
     end_time = UnicodeAttribute()
+    timeslot_number = NumberAttribute()
+    timeslot_type = UnicodeAttribute()
+
+
+# record_type = "attendance#2023-07"
+class MonthlyAttendanceModel(DBModelBase, discriminator="timeslot"):
+    year = NumberAttribute()
+    month = NumberAttribute()
+    timeslot_list = ListAttribute(of=TimeslotMap)
+
+    daily_lecture_amount = ListAttribute(of=NumberAttribute)
+    daily_office_amount = ListAttribute(of=NumberAttribute)
+    daily_latenight_amount = ListAttribute(of=NumberAttribute)
+    daily_over_eight_hour_amount = ListAttribute(of=NumberAttribute)
+    daily_attendance = ListAttribute(of=BooleanAttribute)
+
+    monthly_gross_salary = NumberAttribute()
+    monthly_tax_amount = NumberAttribute()
+    monthly_trans_fee = NumberAttribute()
+    extra_payment = NumberAttribute()
+
+    display_name = UnicodeAttribute()
+    given_name = UnicodeAttribute()
+    family_name = UnicodeAttribute()
+    lecture_hourly_pay = NumberAttribute()
+    office_hourly_pay = NumberAttribute()
+    trans_fee = NumberAttribute()
+    teacher_type = UnicodeAttribute()
+    sub = UnicodeAttribute(null=True)
 
 
 # record_type = "teacher"
 # id = UID
 # 講師の情報
-
-# record_type = "teacher#2023-07"
-# 2023年7月時点での講師の情報
 class TeacherModel(DBModelBase, discriminator="teacher"):
     display_name = UnicodeAttribute()
     given_name = UnicodeAttribute()
@@ -87,10 +108,6 @@ class TeacherModel(DBModelBase, discriminator="teacher"):
     teacher_type = UnicodeAttribute()
 
     sub = UnicodeAttribute(null=True)
-    
-    year = NumberAttribute(null=True)
-    month = NumberAttribute(null=True)
-
 
 # record_type = "meta"
 # id = school_id

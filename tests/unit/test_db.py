@@ -1,24 +1,18 @@
-import copy
-import datetime
-from hashlib import shake_128
-import json
 from pathlib import Path
-from unicodedata import normalize
 import pandas as pd
-import pytest
 from moto import mock_dynamodb
 from rich import print
 import openpyxl as xl
 
 from api import db
-from api.myutils.const import CellBlock, class_times, digest_size
+from api.cruds.timeslot import MonthlyAttendanceRepo
+from api.myutils.const import GENSEN_PATH, CellBlock, LECTURE_TIMES_TO_NUMBER, DIGEST_SIZE
 from api.schemas.person import Teacher, TeacherBase
 from api.schemas.meta import Meta, MetaBase
-from api.schemas.timeslot import Timeslot, TimeslotBase
+from api.schemas.timeslot import Timeslot, UpdateTimeslotsReq
 from api.cruds.teacher import TeacherRepo
 from api.cruds.meta import MetaRepo
-from api.cruds.timeslot import TimeslotRepo, YearMonth
-from api.routers.timeslot import XlsxData, make_timeslots
+from api.routers.timeslot import CreateTimeslotsReq, make_timeslots_from_table
 
 
 def load_meta(school_name: str) -> Meta:
@@ -43,10 +37,20 @@ def load_timeslot(path: Path, school_id: str, year: int, month: int | None = Non
             for row in ws.iter_rows(min_row=i+1, max_row=i+1+CellBlock.BLOCK_SIZE, values_only=True):
                 block_row.append(row)
             content.append(block_row)
-    xlsx_data = XlsxData(content=content)
-    print(content)
-
-    return make_timeslots(xlsx_data, school_id, year, month)
+    teacher_list = TeacherRepo.list(school_id)
+    monthly_attendance_list = make_timeslots_from_table(teacher_list, content, year, month)
+    monthly_attendance_list = MonthlyAttendanceRepo.create_list(monthly_attendance_list)
+    teacher = teacher_list[3]
+    a = MonthlyAttendanceRepo.get(teacher.id, year, month)
+    print(a.timeslot_list[:3], a.extra_payment)
+    req = UpdateTimeslotsReq(
+        timeslot_list=a.timeslot_list,
+        teacher=a.teacher,
+        extra_payment=1000
+    )
+    print(UpdateTimeslotsReq.model_validate(req, strict=True))
+    b = a.update(req)
+    print(b.timeslot_list[:3], b.extra_payment)
 
 @mock_dynamodb
 def test_db():
@@ -56,8 +60,7 @@ def test_db():
     meta = load_meta("test_school")
     teacher_list = load_teacher_info(Path("tests/data/講師情報.csv"), meta.school_id)
     teacher_dict = {teacher.display_name: teacher.id for teacher in teacher_list} 
-    timeslot_list = load_timeslot(Path("tests/data/2022　新時間割表 10月分.xlsx"), meta.school_id, 2023, 7)
-    print(timeslot_list)
+    timeslot_list = load_timeslot(Path("tests/data/2022　新時間割表 10月分.xlsx"), meta.school_id, 2023, 1)
 
     # db.DBModelBase.delete_table()
 

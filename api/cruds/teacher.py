@@ -1,9 +1,5 @@
-from hashlib import shake_128
-
 from api.db import TeacherModel
 from api.schemas.person import Teacher, TeacherBase
-from api.myutils.utilfunc import YearMonth
-from api.myutils.const import digest_size
 
 class TeacherRepo:
     @classmethod
@@ -20,21 +16,12 @@ class TeacherRepo:
         return teacher
 
     @classmethod
-    def list(cls, school_id: str, year_month: YearMonth | None = None) -> list[Teacher]:
-        if year_month != None:
-            assert isinstance(year_month, YearMonth)
-            assert year_month.month != None
-            teachers = [
-                Teacher.from_model(teacher_model) for teacher_model 
-                in TeacherModel.query(f"teacher#{year_month.text}", filter_condition = (TeacherModel.school_id==school_id))
-            ]
-            return teachers
-        else:
-            teachers = [
-                Teacher.from_model(teacher_model) for teacher_model 
-                in TeacherModel.query("teacher", filter_condition = (TeacherModel.school_id==school_id))
-            ]
-            return teachers
+    def list(cls, school_id: str) -> list[Teacher]:
+        teachers = [
+            Teacher.from_model(teacher_model) for teacher_model 
+            in TeacherModel.query("teacher", filter_condition = (TeacherModel.school_id==school_id))
+        ]
+        return teachers
 
     @classmethod
     def get(cls, id: str) -> Teacher:
@@ -43,14 +30,29 @@ class TeacherRepo:
     
     @classmethod
     def get_from_sub(cls, sub: str) -> Teacher:
-        teacher_model = TeacherModel.query("teacher", filter_condition = (TeacherModel.sub==sub)).next()
+        try :
+            teacher_model = TeacherModel.query("teacher", filter_condition = (TeacherModel.sub==sub)).next()
+        except StopIteration:
+            return Teacher(
+                id="",
+                display_name="Guest",
+                given_name="user",
+                family_name="Guest",
+                school_id="",
+                lecture_hourly_pay=0.0,
+                office_hourly_pay=0.0,
+                trans_fee=0.0,
+                teacher_type="teacher",
+                sub=sub,
+            )
+
         teacher = Teacher.from_model(teacher_model)
         return teacher
 
     @classmethod
-    def update(cls, id, teacher_base: TeacherBase, year_month: YearMonth | None = None) -> Teacher:
+    def update(cls, id, teacher_base: TeacherBase) -> Teacher:
         old_teacher = cls.get(id)
-        new_teacher = old_teacher.update(teacher_base, year_month)
+        new_teacher = old_teacher.update(teacher_base)
         regist_teacher = new_teacher.to_model()
         regist_teacher.save()
         return new_teacher

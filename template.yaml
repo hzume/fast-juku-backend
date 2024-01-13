@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   python3.11
@@ -8,84 +8,80 @@ Globals:
   Function:
     Timeout: 3
 
+Parameters:
+  StageName:
+    Type: String
+    Default: Prod
+
 Resources:
   DynamoTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: main_table
       AttributeDefinitions:
-        - 
-          AttributeName: record_type
+        - AttributeName: record_type
           AttributeType: S
-        - 
-          AttributeName: id
+        - AttributeName: id
           AttributeType: S
-        - 
-          AttributeName: school_id
+        - AttributeName: school_id
           AttributeType: S
       KeySchema:
-        - 
-          AttributeName: record_type
+        - AttributeName: record_type
           KeyType: HASH
-        - 
-          AttributeName: id
+        - AttributeName: id
           KeyType: RANGE
       ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
+        ReadCapacityUnits: 25
+        WriteCapacityUnits: 25
       GlobalSecondaryIndexes:
-        - 
-          IndexName: school_id_index
+        - IndexName: school_id_index
           KeySchema:
-            - 
-              AttributeName: school_id
+            - AttributeName: school_id
               KeyType: HASH
-            - 
-              AttributeName: record_type
+            - AttributeName: record_type
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
           ProvisionedThroughput:
-            ReadCapacityUnits: 5
-            WriteCapacityUnits: 5
-    
+            ReadCapacityUnits: 25
+            WriteCapacityUnits: 25
+
   FastJukuBackendApi:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: Prod
-      Cors: 
+      StageName: !Ref StageName
+      Cors:
         AllowMethods: "'*'"
         AllowHeaders: "'*'"
         AllowOrigin: "'*'"
-        AllowCredentials: true
       DefinitionBody:
         swagger: 2.0
         info:
-          title:
-            "sam-app-test"
+          title: "sam-app-test"
         schemes:
-        - https
+          - https
         paths:
           /{proxy+}:
+            methods: any
             any:
               consumes:
-              - application/json
+                - application/json
               produces:
-              - application/json
+                - application/json
               responses:
-                '200':
-                  description: '200 response'
+                "200":
+                  description: "200 response"
                   headers:
                     Access-Control-Allow-Origin:
-                        type: string
+                      type: string
               x-amazon-apigateway-integration:
                 responses:
                   default:
                     statusCode: 200
                     responseParameters:
-                      method.response.header.Access-Control-Allow-Origin : "'*'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
                 uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction.Arn}/invocations
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FastJukuBackendFunction.Arn}/invocations
                 passthroughBehavior: when_no_match
                 httpMethod: POST
                 type: aws
@@ -104,66 +100,32 @@ Resources:
           Properties:
             Path: /{proxy+}
             Method: any
-            RestApiId: !Ref FastJukuBackendApi
-        # Root:
-        #   Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-        #   Properties:
-        #     Path: /
-        #     Method: get, post, options
-        # Teachers:
-        #   Type: Api
-        #   Properties:
-        #     Path: /teachers
-        #     Method: post, get, options
-        # CreateTeachersFromCsv:
-        #   Type: Api
-        #   Properties:
-        #     Path: /teachers/bulk
-        #     Method: post, options
-        # Teacher:
-        #   Type: Api
-        #   Properties:
-        #     Path: /teachers/{teacher_id}
-        #     Method: get, put, delete, options
-        # Metas:
-        #   Type: Api
-        #   Properties:
-        #     Path: /metas
-        #     Method: get, post, options
-        # Meta:
-        #   Type: Api
-        #   Properties:
-        #     Path: /metas/{school_id}
-        #     Method: get, put, delete, options
-        # Timeslots:
-        #   Type: Api
-        #   Properties:
-        #     Path: /timeslots
-        #     Method: post, options
-        # CalculateTimeslot:
-        #   Type: Api
-        #   Properties:
-        #     Path: /timeslots/{school_id}/calculate
-        #     Method: post, options
-        # Docs:
-        #   Type: Api
-        #   Properties:
-        #     Path: /docs
-        #     Method: get, options
-        # DocsJson:
-        #   Type: Api
-        #   Properties:
-        #     Path: /openapi.json
-        #     Method: get, options
+            # RestApiId: !Ref FastJukuBackendApi
+
     Metadata:
       Dockerfile: Dockerfile
       DockerContext: ./
       DockerTag: python3.11-v1
+
+  FastJukuBackendFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      AuthType: NONE
+      Cors: 
+        AllowHeaders: 
+          - "*"
+        AllowMethods: 
+          - "*"
+        AllowOrigins: 
+          - "*"
+      TargetFunctionArn: !GetAtt FastJukuBackendFunction.Arn
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   FastJukuBackend:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+
+  FastJukuBackendFuncionUrl:
+    Value: !GetAtt FastJukuBackendFunctionUrl.FunctionUrl
