@@ -5,7 +5,7 @@ from pydantic import BaseModel, field_validator
 from functools import singledispatch
 from api.myutils.const import GENSEN_PATH
 
-from api.schemas.timeslot import MonthlyAttendance, Timeslot, UpdateTimeslotsReq
+from api.schemas.timeslot import MonthlyAttendance, Timeslot, UpdateAttendanceReq
 from api.db import MonthlyAttendanceModel
 
 
@@ -54,7 +54,7 @@ class MonthlyAttendanceRepo:
 
     @classmethod
     def update(
-        cls, id: str, year: int, month: int, req: UpdateTimeslotsReq
+        cls, id: str, year: int, month: int, req: UpdateAttendanceReq
     ) -> MonthlyAttendance:
         gensen = pd.read_csv(GENSEN_PATH)
         monthly_attendance = cls.get(id, year, month).update(req).calc_salary(gensen)

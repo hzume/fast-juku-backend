@@ -7,7 +7,12 @@ import re
 from pydantic import BaseModel
 
 from api.schemas.person import Teacher
-from api.schemas.timeslot import Meeting, MonthlyAttendance, Timeslot, UpdateTimeslotsReq
+from api.schemas.timeslot import (
+    Meeting,
+    MonthlyAttendance,
+    Timeslot,
+    UpdateAttendanceReq,
+)
 from api.cruds.teacher import TeacherRepo
 from api.cruds.timeslot import MonthlyAttendanceRepo
 from api.myutils.const import GENSEN_PATH
@@ -23,7 +28,7 @@ from api.myutils.const import CellBlock, LECTURE_TIMES_TO_NUMBER, Payslip, PREPA
 router = APIRouter()
 
 
-class CreateTimeslotsReq(BaseModel):
+class CreateAttendanceReq(BaseModel):
     content: list[list[list[Any]]]
     meetings: list[Meeting]
 
@@ -33,13 +38,12 @@ async def get_monthly_salary(id: str, year: int, month: int):
     monthly_attendance = MonthlyAttendanceRepo.get(id, year, month)
     return monthly_attendance
 
+
 @router.put("/salary/{id}", response_model=MonthlyAttendance)
 async def update_monthly_salary(
-    id: str, year: int, month: int, req: UpdateTimeslotsReq
+    id: str, year: int, month: int, req: UpdateAttendanceReq
 ):
-    monthly_attendance = MonthlyAttendanceRepo.update(
-        id, year, month, req
-    )
+    monthly_attendance = MonthlyAttendanceRepo.update(id, year, month, req)
     return monthly_attendance
 
 
@@ -57,23 +61,35 @@ async def delete_monthly_salary_list(school_id: str, year: int, month: int):
 
 @router.post("/salary/bulk/{school_id}", response_model=list[MonthlyAttendance])
 async def create_timeslots_from_class_sheet(
-    school_id: str, time_table_data: CreateTimeslotsReq, year: int, month: int
+    school_id: str, timetable_data: CreateAttendanceReq, year: int, month: int
 ):
     teacher_list = TeacherRepo.list(school_id)
+    id2display_name = {teacher.id: teacher.display_name for teacher in teacher_list}
+    display_name2teacher = {teacher.display_name: teacher for teacher in teacher_list}
 
-    monthly_attendance_list = make_timeslots_from_table(
+    display_name2timeslot_list = make_timeslots_from_table(
         teacher_list,
-        time_table_data.content,
+        timetable_data.content,
         year,
         month,
     )
-    for meeting in time_table_data.meetings:
-        monthly_attendance_list = meeting.add_timeslot_to_participants(
-            monthly_attendance_list
-        )
 
-    for monthly_attendance in monthly_attendance_list:
-        MonthlyAttendanceRepo.create(monthly_attendance)
+    for meeting in timetable_data.meetings:
+        for teacher_id, timeslot in meeting.make_timeslots():
+            display_name = id2display_name[teacher_id]
+            display_name2timeslot_list[display_name].append(timeslot)
+
+    monthly_attendance_list = []
+    for display_name, timeslot_list in display_name2timeslot_list.items():
+        teacher = display_name2teacher[display_name]
+        monthly_attendance = MonthlyAttendanceRepo.create(
+            MonthlyAttendance(
+                year=year,
+                month=month,
+                teacher=teacher,
+            )
+        )
+        monthly_attendance_list.append(monthly_attendance)
 
     return monthly_attendance_list
 
@@ -83,16 +99,11 @@ def make_timeslots_from_table(
     content: list[list[list[Any]]],
     year: int,
     month: int,
-) -> list[MonthlyAttendance]:
+) -> dict[str, list[Timeslot]]:
 
-    name2attendance = {
-        teacher.display_name: MonthlyAttendance(
-            year=year,
-            month=month,
-            teacher=teacher,
-            timeslot_list=[],
-        )
-        for teacher in teacher_list
+    display_name_list = [teacher.display_name for teacher in teacher_list]
+    display_name2timeslot_list = {
+        display_name: [] for display_name in display_name_list
     }
 
     date = None
@@ -166,7 +177,7 @@ def make_timeslots_from_table(
                 continue
 
             # 講師名がteacher_dictになければ無視
-            if display_name not in name2attendance.keys():
+            if display_name not in display_name_list:
                 continue
 
             officework_end_time = get_officework_end_time(
@@ -180,10 +191,10 @@ def make_timeslots_from_table(
                     start_time=start_time,
                     end_time=officework_end_time,  # type: ignore
                 )
-                name2attendance[display_name].timeslot_list.append(timeslot_office)
+                display_name2timeslot_list[display_name].append(timeslot_office)
             else:
-                name2attendance[display_name].timeslot_list.append(timeslot_lecture)
-    return list(name2attendance.values())
+                display_name2timeslot_list[display_name].append(timeslot_lecture)
+    return display_name2timeslot_list
 
 
 def normalize_timeslot_num(timeslot_num_cell: str | int) -> int:
