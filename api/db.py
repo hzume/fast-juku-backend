@@ -69,6 +69,7 @@ class TimeslotMap(MapAttribute):
 
 
 # record_type = "attendance#2023-07"
+# id = teacher_id
 class MonthlyAttendanceModel(DBModelBase, discriminator="timeslot"):
     year = NumberAttribute()
     month = NumberAttribute()
@@ -84,6 +85,7 @@ class MonthlyAttendanceModel(DBModelBase, discriminator="timeslot"):
     monthly_tax_amount = NumberAttribute()
     monthly_trans_fee = NumberAttribute()
     extra_payment = NumberAttribute()
+    remark = UnicodeAttribute(null=True)
 
     display_name = UnicodeAttribute()
     given_name = UnicodeAttribute()
@@ -91,6 +93,7 @@ class MonthlyAttendanceModel(DBModelBase, discriminator="timeslot"):
     lecture_hourly_pay = NumberAttribute()
     office_hourly_pay = NumberAttribute()
     trans_fee = NumberAttribute()
+    fixed_salary = NumberAttribute(null=True)
     teacher_type = UnicodeAttribute()
     sub = UnicodeAttribute(null=True)
 
@@ -105,6 +108,7 @@ class TeacherModel(DBModelBase, discriminator="teacher"):
     lecture_hourly_pay = NumberAttribute()
     office_hourly_pay = NumberAttribute()
     trans_fee = NumberAttribute()
+    fixed_salary = NumberAttribute(null=True)
     teacher_type = UnicodeAttribute()
 
     sub = UnicodeAttribute(null=True)

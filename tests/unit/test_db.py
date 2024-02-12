@@ -9,10 +9,10 @@ from api.cruds.timeslot import MonthlyAttendanceRepo
 from api.myutils.const import GENSEN_PATH, CellBlock, LECTURE_TIMES_TO_NUMBER, DIGEST_SIZE
 from api.schemas.person import Teacher, TeacherBase
 from api.schemas.meta import Meta, MetaBase
-from api.schemas.timeslot import Timeslot, UpdateTimeslotsReq
+from api.schemas.timeslot import Timeslot, UpdateAttendanceReq
 from api.cruds.teacher import TeacherRepo
 from api.cruds.meta import MetaRepo
-from api.routers.timeslot import CreateTimeslotsReq, make_timeslots_from_table
+from api.routers.timeslot import CreateAttendanceReq, make_timeslots_from_table
 
 
 def load_meta(school_name: str) -> Meta:
@@ -43,12 +43,12 @@ def load_timeslot(path: Path, school_id: str, year: int, month: int | None = Non
     teacher = teacher_list[3]
     a = MonthlyAttendanceRepo.get(teacher.id, year, month)
     print(a.timeslot_list[:3], a.extra_payment)
-    req = UpdateTimeslotsReq(
-        timeslot_list=a.timeslot_list,
+    req = UpdateAttendanceReq(
+        timeslot_js_list=a.timeslot_list,
         teacher=a.teacher,
         extra_payment=1000
     )
-    print(UpdateTimeslotsReq.model_validate(req, strict=True))
+    print(UpdateAttendanceReq.model_validate(req, strict=True))
     b = a.update(req)
     print(b.timeslot_list[:3], b.extra_payment)
 

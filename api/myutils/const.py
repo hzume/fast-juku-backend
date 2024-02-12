@@ -24,6 +24,8 @@ LECTURE_TIMES_TO_NUMBER = {
         "8:00-9:20":5
     }
 
+NUMBER_TO_LECTURE_TIMES = {v: k for k, v in LECTURE_TIMES_TO_NUMBER.items()}
+
 GENSEN_PATH = "api/data/gensen-r5.csv"
 
 class Payslip:
