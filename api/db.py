@@ -93,6 +93,7 @@ class MonthlyAttendanceModel(DBModelBase, discriminator="timeslot"):
     lecture_hourly_pay = NumberAttribute()
     office_hourly_pay = NumberAttribute()
     trans_fee = NumberAttribute()
+    fixed_salary = NumberAttribute(null=True)
     teacher_type = UnicodeAttribute()
     sub = UnicodeAttribute(null=True)
 
@@ -107,6 +108,7 @@ class TeacherModel(DBModelBase, discriminator="teacher"):
     lecture_hourly_pay = NumberAttribute()
     office_hourly_pay = NumberAttribute()
     trans_fee = NumberAttribute()
+    fixed_salary = NumberAttribute(null=True)
     teacher_type = UnicodeAttribute()
 
     sub = UnicodeAttribute(null=True)

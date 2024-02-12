@@ -26,8 +26,9 @@ class Timeslot(BaseModel):
         elif self.timeslot_type == "office_work":
             if self.timeslot_number != 0:
                 raise ValueError(f"timeslot_number must be 0, but {self.timeslot_number}")
-        self.start_time = self.start_time.astimezone(ZoneInfo("Asia/Tokyo"))
-        self.end_time = self.end_time.astimezone(ZoneInfo("Asia/Tokyo"))
+        
+        self.start_time = self.start_time.replace(tzinfo=None)
+        self.end_time = self.end_time.replace(tzinfo=None)
         return self
     
     @property
@@ -46,21 +47,11 @@ class UpdateAttendanceReq(BaseModel):
     teacher: Teacher
 
 
-class MonthlyAttendance(BaseModel):
+class MonthlyAttendanceBeforeCalculate(BaseModel):
     year: int
     month: int
     teacher: Teacher
-
-    daily_lecture_amount: list[int] = [0]*31
-    daily_officework_amount: list[int] = [0]*31
-    daily_latenight_amount: list[int] = [0]*31
-    daily_over_eight_hour_amount: list[int] = [0]*31
-    daily_attendance: list[bool] = [False]*31
-
     timeslot_list: list[Timeslot]
-    monthly_gross_salary: int = 0
-    monthly_tax_amount: int = 0
-    monthly_trans_fee: int = 0
     extra_payment: int = 0
     remark: str = ""
 
@@ -77,88 +68,27 @@ class MonthlyAttendance(BaseModel):
         if v < 1000 or v > 9999:
             raise ValueError(f"year must be in range 1000-9999, but {v}")
         return v
-
-    @property
-    def record_type(self) -> str:
-        return f"attendance#{self.year}-{self.month:02}"
-
-    def to_model(self) -> MonthlyAttendanceModel:
-        timeslot_list = [TimeslotMap(
-            day=timeslot.day,
-            start_time=timeslot.start_time_str,
-            end_time=timeslot.end_time_str,
-            timeslot_number=timeslot.timeslot_number,
-            timeslot_type=timeslot.timeslot_type,
-        ) for timeslot in self.timeslot_list]
-        
-        return MonthlyAttendanceModel(
-            record_type=self.record_type,
-            timestamp=datetime.datetime.now().isoformat(),
-            year=self.year,
-            month=self.month,
-            timeslot_list=timeslot_list,
-
-            daily_lecture_amount=self.daily_lecture_amount,
-            daily_office_amount=self.daily_officework_amount,
-            daily_latenight_amount=self.daily_latenight_amount,
-            daily_over_eight_hour_amount=self.daily_over_eight_hour_amount,
-            daily_attendance=self.daily_attendance,
-
-            monthly_gross_salary=self.monthly_gross_salary,
-            monthly_tax_amount=self.monthly_tax_amount,
-            monthly_trans_fee=self.monthly_trans_fee,
-            extra_payment=self.extra_payment,
-            remark=self.remark,
-
-            **self.teacher.model_dump(),
-        )
     
-    @classmethod
-    def from_model(cls, monthly_attendance_model: MonthlyAttendanceModel) -> "MonthlyAttendance":
-        year = int(monthly_attendance_model.year)
-        month = int(monthly_attendance_model.month)
-        timeslot_list = [Timeslot(
-            day=int(timeslot.day),
-            start_time=time_str_2_datetime(year, month, int(timeslot.day), timeslot.start_time),
-            end_time=time_str_2_datetime(year, month, int(timeslot.day), timeslot.end_time),
-            timeslot_number=int(timeslot.timeslot_number),
-            timeslot_type=timeslot.timeslot_type, # type: ignore
-        ) for timeslot in monthly_attendance_model.timeslot_list]
-
-        if monthly_attendance_model.remark == None:
-            monthly_attendance_model.remark = ""
-
-        return MonthlyAttendance(
-            year=year,
-            month=month,
-
-            daily_lecture_amount=monthly_attendance_model.daily_lecture_amount, # type: ignore
-            daily_officework_amount=monthly_attendance_model.daily_office_amount, # type: ignore
-            daily_latenight_amount=monthly_attendance_model.daily_latenight_amount, # type: ignore
-            daily_over_eight_hour_amount=monthly_attendance_model.daily_over_eight_hour_amount, # type: ignore
-            daily_attendance=monthly_attendance_model.daily_attendance, # type: ignore
-
-            monthly_gross_salary=int(monthly_attendance_model.monthly_gross_salary),
-            monthly_tax_amount=int(monthly_attendance_model.monthly_tax_amount),
-            monthly_trans_fee=int(monthly_attendance_model.monthly_trans_fee),
-            extra_payment=int(monthly_attendance_model.extra_payment),
-            remark=monthly_attendance_model.remark,
-
-            teacher=Teacher.from_model_monthly(monthly_attendance_model),
-            timeslot_list=timeslot_list,
-        )
-    
-    def update(self, req: UpdateAttendanceReq) -> "MonthlyAttendance":
-        return MonthlyAttendance(
+    def update(self, req: UpdateAttendanceReq) -> "MonthlyAttendanceBeforeCalculate":
+        return MonthlyAttendanceBeforeCalculate(
             year=self.year,
             month=self.month,
             teacher=req.teacher,
             timeslot_list=req.timeslot_list,
-            monthly_gross_salary=self.monthly_gross_salary,
-            monthly_tax_amount=self.monthly_tax_amount,
-            monthly_trans_fee=self.monthly_trans_fee,
             extra_payment=req.extra_payment,
             remark=req.remark,
+        )
+    
+    @classmethod
+    def from_monthly_attendance(cls, monthly_attendance: "MonthlyAttendance") -> "MonthlyAttendanceBeforeCalculate":
+        return MonthlyAttendanceBeforeCalculate(
+            year=monthly_attendance.year,
+            month=monthly_attendance.month,
+            teacher=monthly_attendance.teacher,
+
+            timeslot_list=monthly_attendance.timeslot_list,
+            extra_payment=monthly_attendance.extra_payment,
+            remark=monthly_attendance.remark
         )
     
     def calc_salary(self, gensen: pd.DataFrame) -> "MonthlyAttendance":
@@ -231,11 +161,11 @@ class MonthlyAttendance(BaseModel):
             if end_time.hour < 12:
                 latenight_boundary = datetime.datetime.combine(
                     datetime.date(year, month, day + 1), datetime.time(10)
-                ).astimezone(ZoneInfo("Asia/Tokyo"))
+                )
             else:
                 latenight_boundary = datetime.datetime.combine(
                     datetime.date(year, month, day + 1), datetime.time(22)
-                ).astimezone(ZoneInfo("Asia/Tokyo"))
+                )
             if (end_time > latenight_boundary):
                 latenight_amount_min = int((end_time - latenight_boundary).seconds / 60)
             else:
@@ -259,7 +189,7 @@ class MonthlyAttendance(BaseModel):
             daily_over_eight_hour_amount[day] = over_eight_hour_amount_min
             daily_attendance[day] = (len(daily_lectures)+len(daily_officeworks) > 0)
 
-        monthly_gross_amount: float = np.sum(daily_salary) # type: ignore
+        monthly_gross_amount: float = np.sum(daily_salary) + teacher.fixed_salary # type: ignore
         monthly_trans_fee: float = np.sum(daily_attendance) * teacher.trans_fee # type: ignore
                 
         monthly_gross_extra = monthly_gross_amount + self.extra_payment
@@ -289,6 +219,89 @@ class MonthlyAttendance(BaseModel):
             extra_payment=self.extra_payment,
             remark=self.remark,
         )
+
+
+class MonthlyAttendance(MonthlyAttendanceBeforeCalculate):
+    daily_lecture_amount: list[int] = [0]*31
+    daily_officework_amount: list[int] = [0]*31
+    daily_latenight_amount: list[int] = [0]*31
+    daily_over_eight_hour_amount: list[int] = [0]*31
+    daily_attendance: list[bool] = [False]*31
+
+    monthly_gross_salary: int = 0
+    monthly_tax_amount: int = 0
+    monthly_trans_fee: int = 0
+
+    @property
+    def record_type(self) -> str:
+        return f"attendance#{self.year}-{self.month:02}"
+
+    def to_model(self) -> MonthlyAttendanceModel:
+        timeslot_list = [TimeslotMap(
+            day=timeslot.day,
+            start_time=timeslot.start_time_str,
+            end_time=timeslot.end_time_str,
+            timeslot_number=timeslot.timeslot_number,
+            timeslot_type=timeslot.timeslot_type,
+        ) for timeslot in self.timeslot_list]
+        
+        return MonthlyAttendanceModel(
+            record_type=self.record_type,
+            timestamp=datetime.datetime.now().isoformat(),
+            year=self.year,
+            month=self.month,
+            timeslot_list=timeslot_list,
+
+            daily_lecture_amount=self.daily_lecture_amount,
+            daily_office_amount=self.daily_officework_amount,
+            daily_latenight_amount=self.daily_latenight_amount,
+            daily_over_eight_hour_amount=self.daily_over_eight_hour_amount,
+            daily_attendance=self.daily_attendance,
+
+            monthly_gross_salary=self.monthly_gross_salary,
+            monthly_tax_amount=self.monthly_tax_amount,
+            monthly_trans_fee=self.monthly_trans_fee,
+            extra_payment=self.extra_payment,
+            remark=self.remark,
+
+            **self.teacher.model_dump(),
+        )
+    
+    @classmethod
+    def from_model(cls, monthly_attendance_model: MonthlyAttendanceModel) -> "MonthlyAttendance":
+        year = int(monthly_attendance_model.year)
+        month = int(monthly_attendance_model.month)
+        timeslot_list = [Timeslot(
+            day=int(timeslot.day),
+            start_time=time_str_2_datetime(year, month, int(timeslot.day), timeslot.start_time),
+            end_time=time_str_2_datetime(year, month, int(timeslot.day), timeslot.end_time),
+            timeslot_number=int(timeslot.timeslot_number),
+            timeslot_type=timeslot.timeslot_type, # type: ignore
+        ) for timeslot in monthly_attendance_model.timeslot_list]
+
+        if monthly_attendance_model.remark == None:
+            monthly_attendance_model.remark = ""
+
+        return MonthlyAttendance(
+            year=year,
+            month=month,
+
+            daily_lecture_amount=monthly_attendance_model.daily_lecture_amount, # type: ignore
+            daily_officework_amount=monthly_attendance_model.daily_office_amount, # type: ignore
+            daily_latenight_amount=monthly_attendance_model.daily_latenight_amount, # type: ignore
+            daily_over_eight_hour_amount=monthly_attendance_model.daily_over_eight_hour_amount, # type: ignore
+            daily_attendance=monthly_attendance_model.daily_attendance, # type: ignore
+
+            monthly_gross_salary=int(monthly_attendance_model.monthly_gross_salary),
+            monthly_tax_amount=int(monthly_attendance_model.monthly_tax_amount),
+            monthly_trans_fee=int(monthly_attendance_model.monthly_trans_fee),
+            extra_payment=int(monthly_attendance_model.extra_payment),
+            remark=monthly_attendance_model.remark,
+
+            teacher=Teacher.from_model_monthly(monthly_attendance_model),
+            timeslot_list=timeslot_list,
+        )
+    
 
 class Meeting(BaseModel):
     year: int

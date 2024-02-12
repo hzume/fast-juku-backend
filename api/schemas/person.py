@@ -23,7 +23,8 @@ class TeacherBase(PersonBase):
     lecture_hourly_pay: float
     office_hourly_pay: float
     trans_fee: float = 0.0
-    teacher_type: Literal["teacher"]
+    fixed_salary: float = 0.0
+    teacher_type: Literal["teacher", "admin"]
     sub: str | None = None
 
 
@@ -39,6 +40,7 @@ class Teacher(TeacherBase):
             lecture_hourly_pay=self.lecture_hourly_pay,
             office_hourly_pay=self.office_hourly_pay,
             trans_fee=self.trans_fee,
+            fixed_salary=self.fixed_salary,
             teacher_type=self.teacher_type,
             sub=self.sub,
         )
@@ -65,6 +67,9 @@ class Teacher(TeacherBase):
 
     @classmethod
     def from_model(cls, teacher_model: TeacherModel) -> "Teacher":
+        if teacher_model.fixed_salary == None:
+            teacher_model.fixed_salary = 0.0
+
         return Teacher(
             id=teacher_model.id,
             display_name=teacher_model.display_name,
@@ -74,12 +79,16 @@ class Teacher(TeacherBase):
             lecture_hourly_pay=teacher_model.lecture_hourly_pay,
             office_hourly_pay=teacher_model.office_hourly_pay,
             trans_fee=teacher_model.trans_fee,
+            fixed_salary=teacher_model.fixed_salary,
             teacher_type=teacher_model.teacher_type,  # type: ignore
             sub=teacher_model.sub,
         )
     
     @classmethod
     def from_model_monthly(cls, monthly_timeslot_list: MonthlyAttendanceModel) -> "Teacher":
+        if monthly_timeslot_list.fixed_salary == None:
+            monthly_timeslot_list.fixed_salary = 0.0
+
         return Teacher(
             id=monthly_timeslot_list.id,
             display_name=monthly_timeslot_list.display_name,
@@ -89,6 +98,7 @@ class Teacher(TeacherBase):
             lecture_hourly_pay=monthly_timeslot_list.lecture_hourly_pay,
             office_hourly_pay=monthly_timeslot_list.office_hourly_pay,
             trans_fee=monthly_timeslot_list.trans_fee,
+            fixed_salary=monthly_timeslot_list.fixed_salary,
             teacher_type=monthly_timeslot_list.teacher_type,  # type: ignore
             sub=monthly_timeslot_list.sub,
         )

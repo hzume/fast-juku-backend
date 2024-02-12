@@ -1,5 +1,6 @@
 from types import NoneType
 from typing import Any
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter
 from unicodedata import normalize
 import datetime
@@ -53,6 +54,15 @@ async def get_monthly_salary_list(school_id: str, year: int, month: int | None =
     return monthly_attendance_list
 
 
+@router.get("/salary/bulk/{school_id}/between", response_model=list[MonthlyAttendance])
+async def get_monthly_salary_list_between(
+    school_id: str, start_year: int, start_month: int, end_year: int, end_month: int
+):
+    monthly_attendance_list = MonthlyAttendanceRepo.list_between(
+        school_id, start_year, start_month, end_year, end_month
+    )
+    return monthly_attendance_list
+
 @router.delete("/salary/bulk/{school_id}", response_model=list[MonthlyAttendance])
 async def delete_monthly_salary_list(school_id: str, year: int, month: int):
     monthly_attendance_list = MonthlyAttendanceRepo.delete_list(school_id, year, month)
@@ -87,6 +97,7 @@ async def create_timeslots_from_class_sheet(
                 year=year,
                 month=month,
                 teacher=teacher,
+                timeslot_list=timeslot_list
             )
         )
         monthly_attendance_list.append(monthly_attendance)
@@ -102,7 +113,7 @@ def make_timeslots_from_table(
 ) -> dict[str, list[Timeslot]]:
 
     display_name_list = [teacher.display_name for teacher in teacher_list]
-    display_name2timeslot_list = {
+    display_name2timeslot_list: dict[str, list[Timeslot]] = {
         display_name: [] for display_name in display_name_list
     }
 
