@@ -44,7 +44,7 @@ def load_timeslot(path: Path, school_id: str, year: int, month: int | None = Non
     a = MonthlyAttendanceRepo.get(teacher.id, year, month)
     print(a.timeslot_list[:3], a.extra_payment)
     req = UpdateAttendanceReq(
-        timeslot_list=a.timeslot_list,
+        timeslot_js_list=a.timeslot_list,
         teacher=a.teacher,
         extra_payment=1000
     )

@@ -8,7 +8,31 @@ from api.db import MonthlyAttendanceModel, TimeslotMap
 from api.schemas.meta import Meta
 from api.schemas.person import Teacher
 from api.myutils.utilfunc import time_str_2_datetime
-from api.myutils.const import PREPARE_TIME
+from api.myutils.const import PREPARE_TIME, NUMBER_TO_LECTURE_TIMES
+
+
+class TimeslotJS(BaseModel):
+    year: int
+    month: int
+    day: int
+    timeslot_number: int
+    timeslot_type: Literal["lecture", "office_work", "other"]
+
+    def to_timeslot(self) -> "Timeslot":
+        date = datetime.date(self.year, self.month, self.day)
+        time_str = NUMBER_TO_LECTURE_TIMES[self.timeslot_number]
+        start_time_str, end_time_str = time_str.split("-")
+        start_time_time = datetime.datetime.strptime(start_time_str, "%H:%M").time()
+        end_time_time = datetime.datetime.strptime(end_time_str, "%H:%M").time()
+        start_time = datetime.datetime.combine(date, start_time_time)
+        end_time = datetime.datetime.combine(date, end_time_time)
+        return Timeslot(
+            day=self.day,
+            start_time=start_time,
+            end_time=end_time,
+            timeslot_number=self.timeslot_number,
+            timeslot_type=self.timeslot_type
+        )
 
 
 class Timeslot(BaseModel):
@@ -26,9 +50,6 @@ class Timeslot(BaseModel):
         elif self.timeslot_type == "office_work":
             if self.timeslot_number != 0:
                 raise ValueError(f"timeslot_number must be 0, but {self.timeslot_number}")
-        
-        self.start_time = self.start_time.replace(tzinfo=None)
-        self.end_time = self.end_time.replace(tzinfo=None)
         return self
     
     @property
@@ -41,7 +62,7 @@ class Timeslot(BaseModel):
 
 
 class UpdateAttendanceReq(BaseModel):
-    timeslot_list: list[Timeslot]
+    timeslot_js_list: list[TimeslotJS]
     extra_payment: int
     remark: str
     teacher: Teacher
@@ -70,11 +91,12 @@ class MonthlyAttendanceBeforeCalculate(BaseModel):
         return v
     
     def update(self, req: UpdateAttendanceReq) -> "MonthlyAttendanceBeforeCalculate":
+        time_slot_list = [timeslot_js.to_timeslot() for timeslot_js in req.timeslot_js_list]
         return MonthlyAttendanceBeforeCalculate(
             year=self.year,
             month=self.month,
             teacher=req.teacher,
-            timeslot_list=req.timeslot_list,
+            timeslot_list=time_slot_list,
             extra_payment=req.extra_payment,
             remark=req.remark,
         )
