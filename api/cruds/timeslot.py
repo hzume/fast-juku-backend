@@ -1,12 +1,12 @@
-import datetime
-from typing import Optional
 import pandas as pd
-from pydantic import BaseModel, field_validator
-from functools import singledispatch
-from api.myutils.const import GENSEN_PATH
 
-from api.schemas.timeslot import MonthlyAttendance, MonthlyAttendanceBeforeCalculate, UpdateAttendanceReq
 from api.db import MonthlyAttendanceModel
+from api.myutils.const import GENSEN_PATH
+from api.schemas.timeslot import (
+    MonthlyAttendance,
+    MonthlyAttendanceBeforeCalculate,
+    UpdateAttendanceReq,
+)
 
 
 class MonthlyAttendanceRepo:
@@ -40,7 +40,7 @@ class MonthlyAttendanceRepo:
     def list_monthly(
         cls, school_id: str, year: int, month: int | None = None
     ) -> list[MonthlyAttendance]:
-        if month == None:
+        if month is None:
             record_type = f"attendance#{year}"
         else:
             record_type = f"attendance#{year}-{month:02}"

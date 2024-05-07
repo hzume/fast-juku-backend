@@ -1,12 +1,19 @@
-from types import NoneType
-from typing import Any
-from zoneinfo import ZoneInfo
-from fastapi import APIRouter
-from unicodedata import normalize
 import datetime
 import re
+from types import NoneType
+from typing import Any
+from unicodedata import normalize
+
+from fastapi import APIRouter, status
 from pydantic import BaseModel
 
+from api.cruds.teacher import TeacherRepo
+from api.cruds.timeslot import MonthlyAttendanceRepo
+from api.myutils.const import LECTURE_TIMES_TO_NUMBER, CellBlock
+from api.myutils.utilfunc import (
+    excel_date_to_datetime,
+    str2int_timeslot_num,
+)
 from api.schemas.person import Teacher
 from api.schemas.timeslot import (
     Meeting,
@@ -14,17 +21,6 @@ from api.schemas.timeslot import (
     Timeslot,
     UpdateAttendanceReq,
 )
-from api.cruds.teacher import TeacherRepo
-from api.cruds.timeslot import MonthlyAttendanceRepo
-from api.myutils.const import GENSEN_PATH
-
-from api.myutils.utilfunc import (
-    excel_date_to_datetime,
-    str2int_timeslot_num,
-    get_start_end_time,
-)
-from api.myutils.const import CellBlock, LECTURE_TIMES_TO_NUMBER, Payslip, PREPARE_TIME
-
 
 router = APIRouter()
 
@@ -34,13 +30,17 @@ class CreateAttendanceReq(BaseModel):
     meetings: list[Meeting]
 
 
-@router.get("/salary/{id}", response_model=MonthlyAttendance)
+@router.get(
+    "/salary/{id}", response_model=MonthlyAttendance, status_code=status.HTTP_200_OK
+)
 async def get_monthly_salary(id: str, year: int, month: int):
     monthly_attendance = MonthlyAttendanceRepo.get(id, year, month)
     return monthly_attendance
 
 
-@router.put("/salary/{id}", response_model=MonthlyAttendance)
+@router.put(
+    "/salary/{id}", response_model=MonthlyAttendance, status_code=status.HTTP_200_OK
+)
 async def update_monthly_salary(
     id: str, year: int, month: int, req: UpdateAttendanceReq
 ):
@@ -48,13 +48,21 @@ async def update_monthly_salary(
     return monthly_attendance
 
 
-@router.get("/salary/bulk/{school_id}", response_model=list[MonthlyAttendance])
+@router.get(
+    "/salary/bulk/{school_id}",
+    response_model=list[MonthlyAttendance],
+    status_code=status.HTTP_200_OK,
+)
 async def get_monthly_salary_list(school_id: str, year: int, month: int | None = None):
     monthly_attendance_list = MonthlyAttendanceRepo.list_monthly(school_id, year, month)
     return monthly_attendance_list
 
 
-@router.get("/salary/bulk/{school_id}/between", response_model=list[MonthlyAttendance])
+@router.get(
+    "/salary/bulk/{school_id}/between",
+    response_model=list[MonthlyAttendance],
+    status_code=status.HTTP_200_OK,
+)
 async def get_monthly_salary_list_between(
     school_id: str, start_year: int, start_month: int, end_year: int, end_month: int
 ):
@@ -62,6 +70,7 @@ async def get_monthly_salary_list_between(
         school_id, start_year, start_month, end_year, end_month
     )
     return monthly_attendance_list
+
 
 @router.delete("/salary/bulk/{school_id}", response_model=list[MonthlyAttendance])
 async def delete_monthly_salary_list(school_id: str, year: int, month: int):
@@ -94,10 +103,7 @@ async def create_timeslots_from_class_sheet(
         teacher = display_name2teacher[display_name]
         monthly_attendance = MonthlyAttendanceRepo.create(
             MonthlyAttendance(
-                year=year,
-                month=month,
-                teacher=teacher,
-                timeslot_list=timeslot_list
+                year=year, month=month, teacher=teacher, timeslot_list=timeslot_list
             )
         )
         monthly_attendance_list.append(monthly_attendance)
@@ -136,11 +142,11 @@ def make_timeslots_from_table(
         if type(time_cell) not in [str, NoneType]:
             raise Exception(f"time_cell type is {type(time_cell)}")
 
-        if (timeslot_num_cell == None) | (time_cell == None):
+        if (timeslot_num_cell is None) | (time_cell is None):
             continue
 
         # 日付を更新
-        if date_cell != None:
+        if date_cell is not None:
             date = normalize_date(date_cell)  # type: ignore
 
         match date:
@@ -180,11 +186,11 @@ def make_timeslots_from_table(
                 raise Exception(f"cell2 type is {type(cell2)}")
 
             # 講師名がNoneであれば無視
-            if display_name == None:
+            if display_name is None:
                 continue
 
             # cellが二つともNoneであれば無視
-            if (cell1 == None) and (cell2 == None):
+            if (cell1 is None) and (cell2 is None):
                 continue
 
             # 講師名がteacher_dictになければ無視
@@ -194,7 +200,7 @@ def make_timeslots_from_table(
             officework_end_time = get_officework_end_time(
                 start_time, end_time, cell1, cell2
             )
-            if officework_end_time != None:
+            if officework_end_time is not None:
                 timeslot_office = Timeslot(
                     day=date.day,  # type: ignore
                     timeslot_number=0,
@@ -209,9 +215,11 @@ def make_timeslots_from_table(
 
 
 def normalize_timeslot_num(timeslot_num_cell: str | int) -> int:
-    if type(timeslot_num_cell) == str:
+    # if type(timeslot_num_cell) == str:
+    if isinstance(timeslot_num_cell, str):
         return str2int_timeslot_num(timeslot_num_cell)
-    elif type(timeslot_num_cell) == int:
+    # elif type(timeslot_num_cell) == int:
+    elif isinstance(timeslot_num_cell, int):
         return timeslot_num_cell
     else:
         raise Exception(f"timeslot_num_cell type is {type(timeslot_num_cell)}")
@@ -235,9 +243,11 @@ def normalize_time(
 
 
 def normalize_date(date_cell: datetime.date | int) -> datetime.date:
-    if type(date_cell) == datetime.date:
+    # if type(date_cell) == datetime.date:
+    if isinstance(date_cell, datetime.date):
         return date_cell
-    elif type(date_cell) == int:
+    # elif type(date_cell) == int:
+    elif isinstance(date_cell, int):
         return excel_date_to_datetime(date_cell)
     else:
         raise Exception(f"date_cell type is {type(date_cell)}")
@@ -251,7 +261,7 @@ def get_officework_end_time(
     cell2: str | None,
 ) -> datetime.datetime | None:
     def is_officework_cell(cell: str | None) -> datetime.datetime | None:
-        if cell == None:
+        if cell is None:
             return None
         cell = normalize("NFKC", cell)  # type: ignore
         # cellが"事務"を含む場合
@@ -268,7 +278,7 @@ def get_officework_end_time(
     cell1_officework_time = is_officework_cell(cell1)
     cell2_officework_time = is_officework_cell(cell2)
 
-    if cell1_officework_time != None:
+    if cell1_officework_time is not None:
         return cell1_officework_time
     else:
         return cell2_officework_time

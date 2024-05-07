@@ -1,6 +1,7 @@
 from api.db import TeacherModel
 from api.schemas.person import Teacher, TeacherBase
 
+
 class TeacherRepo:
     @classmethod
     def create(cls, teacher_base: TeacherBase) -> Teacher:
@@ -8,18 +9,14 @@ class TeacherRepo:
         regist_teacher = teacher.to_model()
         regist_teacher.save()
         return teacher
-    
-    @classmethod
-    def regist(cls, teacher: Teacher) -> Teacher:
-        regist_teacher = teacher.to_model()
-        regist_teacher.save()
-        return teacher
 
     @classmethod
     def list(cls, school_id: str) -> list[Teacher]:
         teachers = [
-            Teacher.from_model(teacher_model) for teacher_model 
-            in TeacherModel.query("teacher", filter_condition = (TeacherModel.school_id==school_id))
+            Teacher.from_model(teacher_model)
+            for teacher_model in TeacherModel.query(
+                "teacher", filter_condition=(TeacherModel.school_id == school_id)
+            )
         ]
         return teachers
 
@@ -27,13 +24,16 @@ class TeacherRepo:
     def get(cls, id: str) -> Teacher:
         teacher = Teacher.from_model(TeacherModel.get("teacher", id))
         return teacher
-    
+
     @classmethod
     def get_from_sub(cls, sub: str) -> Teacher:
-        try :
-            teacher_model = TeacherModel.query("teacher", filter_condition = (TeacherModel.sub==sub)).next()
+        try:
+            teacher_model = TeacherModel.query(
+                "teacher", filter_condition=(TeacherModel.sub == sub)
+            ).next()
+            teacher = Teacher.from_model(teacher_model)
         except StopIteration:
-            return Teacher(
+            teacher = Teacher(
                 id="",
                 display_name="Guest",
                 given_name="user",
@@ -46,12 +46,14 @@ class TeacherRepo:
                 sub=sub,
             )
 
-        teacher = Teacher.from_model(teacher_model)
         return teacher
 
     @classmethod
     def update(cls, id, teacher_base: TeacherBase) -> Teacher:
         old_teacher = cls.get(id)
+        assert (
+            old_teacher.school_id == teacher_base.school_id
+        ), "school_id must not be changed"
         new_teacher = old_teacher.update(teacher_base)
         regist_teacher = new_teacher.to_model()
         regist_teacher.save()
@@ -63,4 +65,3 @@ class TeacherRepo:
         teacher = Teacher.from_model(teacher_model)
         teacher_model.delete()
         return teacher
-    

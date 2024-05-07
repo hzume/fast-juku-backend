@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from mangum import Mangum
-from starlette.middleware.cors import CORSMiddleware
 
-from api.routers import root, teacher, timeslot, meta
-
+from api.routers import meta, root, teacher, timeslot
 
 app = FastAPI()
+
+# from starlette.middleware.cors import CORSMiddleware
 
 # app.add_middleware(
 #     CORSMiddleware,
