@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Generator
 
 import openpyxl as xl
 import pytest
@@ -27,17 +28,17 @@ def read_timetable_excel(file_path: str, month: int):
             continue
         ws = wb[sheet]
         for i in range(100):
-
-            block_row = ws[i * 3 + 1 : (i + 1) * 3 + 1][:100]
-            block_row_values = []
-            for row in block_row:
-                block_row_values.append([cell.value for cell in row])
-            ret.append(block_row_values)
+            block_row = []
+            for row in ws.iter_rows(
+                min_row=i * 3 + 1, max_row=(i + 1) * 3 + 1, max_col=100
+            ):
+                block_row.append([cell.value for cell in row])
+            ret.append(block_row)
     return ret
 
 
 @pytest.fixture(autouse=True)
-def set_db() -> None:
+def set_db() -> Generator:
     setattr(db.DBModelBase.Meta, "host", "http://localhost:8000")
     db.DBModelBase.create_table(
         read_capacity_units=10, write_capacity_units=10, wait=True
@@ -213,8 +214,9 @@ def test_calc_salary(snapshot):
     assert res.status_code == status.HTTP_200_OK, res.json()["detail"]
     assert monthly_attendance_0 == MonthlyAttendance(**res.json())
 
-
-    res = client.get(f"salary/bulk/{school_id}/between?start_year={year}&start_month={month_2}&end_year={year}&end_month={month_1}")
+    res = client.get(
+        f"salary/bulk/{school_id}/between?start_year={year}&start_month={month_2}&end_year={year}&end_month={month_1}"
+    )
     assert res.status_code == status.HTTP_200_OK, res.json()["detail"]
     monthly_attendance_list_between = [
         MonthlyAttendance(**monthly_attendance) for monthly_attendance in res.json()
@@ -252,5 +254,6 @@ def test_calc_salary(snapshot):
 
     res = client.delete(f"salary/bulk/{school_id}?year={year}&month={month_1}")
     assert res.status_code == status.HTTP_200_OK, res.json()["detail"]
-    assert client.get(f"salary/bulk/{school_id}?year={year}&month={month_1}").json() == []
-    
+    assert (
+        client.get(f"salary/bulk/{school_id}?year={year}&month={month_1}").json() == []
+    )
