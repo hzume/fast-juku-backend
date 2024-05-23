@@ -89,6 +89,7 @@ Resources:
   FastJukuBackendFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
+      FunctionName: !Sub FastJukuBackendFunction${StageName}
       PackageType: Image
       Timeout: 100
       Architectures:
@@ -125,7 +126,7 @@ Outputs:
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   FastJukuBackend:
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/"
 
   FastJukuBackendFuncionUrl:
     Value: !GetAtt FastJukuBackendFunctionUrl.FunctionUrl

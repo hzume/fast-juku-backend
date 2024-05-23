@@ -1,3 +1,5 @@
+import os
+
 from pynamodb.attributes import (
     BooleanAttribute,
     DiscriminatorAttribute,
@@ -33,8 +35,8 @@ class SubIndex(LocalSecondaryIndex):
 
 class DBModelBase(Model):
     class Meta:
-        table_name = 'main_table'
-        region = 'ap-northeast-3'
+        table_name = os.environ["TABLE_NAME"]
+        region = os.environ["REGION"]
         # host = 'http://localhost:8000'
         
         read_capacity_units = 25

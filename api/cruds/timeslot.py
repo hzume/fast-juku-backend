@@ -38,12 +38,9 @@ class MonthlyAttendanceRepo:
 
     @classmethod
     def list_monthly(
-        cls, school_id: str, year: int, month: int | None = None
+        cls, school_id: str, year: int, month: int
     ) -> list[MonthlyAttendance]:
-        if month is None:
-            record_type = f"attendance#{year}"
-        else:
-            record_type = f"attendance#{year}-{month:02}"
+        record_type = f"attendance#{year}-{month:02}"
         monthly_attendance_model_list = MonthlyAttendanceModel.school_id_index.query(
             school_id, MonthlyAttendanceModel.record_type == record_type
         )
