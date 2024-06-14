@@ -1,10 +1,12 @@
-from typing import Self
-from hashlib import shake_128
-from pydantic import BaseModel
 import datetime
+from hashlib import shake_128
+from typing import Self
 
-from api.db import MetaModel
+from pydantic import BaseModel
+
+from api.models.base import SchoolModel
 from api.myutils.const import DIGEST_SIZE
+
 
 class MetaBase(BaseModel):
     school_name: str
@@ -23,8 +25,8 @@ class Meta(MetaBase):
     def update(self, meta_base: MetaBase) -> "Meta":
         return Meta(school_id=self.school_id, **meta_base.model_dump())
 
-    def to_model(self) -> MetaModel:
-        return MetaModel(
+    def to_model(self) -> SchoolModel:
+        return SchoolModel(
             record_type="meta",
             id=self.school_id,
             school_id=self.school_id,
@@ -34,7 +36,7 @@ class Meta(MetaBase):
         )
     
     @classmethod
-    def from_model(cls, meta_model: MetaModel) -> Self:
+    def from_model(cls, meta_model: SchoolModel) -> Self:
         return cls(
             school_id=meta_model.school_id,
             school_name=meta_model.school_name,

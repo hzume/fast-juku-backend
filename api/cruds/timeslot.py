@@ -1,6 +1,6 @@
 import pandas as pd
 
-from api.db import MonthlyAttendanceModel
+from api.models.base import MonthlyAttendanceModel
 from api.myutils.const import GENSEN_PATH
 from api.schemas.timeslot import (
     MonthlyAttendance,
@@ -42,7 +42,7 @@ class MonthlyAttendanceRepo:
     ) -> list[MonthlyAttendance]:
         record_type = f"attendance#{year}-{month:02}"
         monthly_attendance_model_list = MonthlyAttendanceModel.school_id_index.query(
-            school_id, MonthlyAttendanceModel.record_type == record_type
+            school_id, MonthlyAttendanceModel.p_key == record_type
         )
         return [
             MonthlyAttendance.from_model(monthly_attendance_model)
@@ -55,7 +55,7 @@ class MonthlyAttendanceRepo:
     ) -> list[MonthlyAttendance]:
         monthly_attendance_model_list = MonthlyAttendanceModel.school_id_index.query(
             school_id,
-            MonthlyAttendanceModel.record_type.between(
+            MonthlyAttendanceModel.p_key.between(
                 f"attendance#{start_year}-{start_month:02}",
                 f"attendance#{end_year}-{end_month:02}",
             ),

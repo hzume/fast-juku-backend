@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, field_validator, model_validator
 
-from api.db import (
+from api.models.base import (
     MonthlyAttendanceModel,
     TimeslotMap,
 )

@@ -1,4 +1,4 @@
-from api.db import TeacherModel
+from api.models.base import TeacherModel
 from api.schemas.person import Teacher, TeacherBase
 
 
@@ -6,8 +6,8 @@ class TeacherRepo:
     @classmethod
     def create(cls, teacher_base: TeacherBase) -> Teacher:
         teacher = Teacher.create(teacher_base)
-        regist_teacher = teacher.to_model()
-        regist_teacher.save()
+        teacher_model = teacher.to_model()
+        teacher_model.save()
         return teacher
 
     @classmethod

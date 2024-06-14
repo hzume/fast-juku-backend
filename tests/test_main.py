@@ -7,7 +7,7 @@ import yaml
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from api import db
+from api.models import base
 from api.main import app
 from api.schemas.meta import Meta
 from api.schemas.person import Teacher, TeacherBase
@@ -39,12 +39,12 @@ def read_timetable_excel(file_path: str, month: int):
 
 @pytest.fixture(autouse=True)
 def set_db() -> Generator:
-    setattr(db.DBModelBase.Meta, "host", "http://localhost:8000")
-    db.DBModelBase.create_table(
+    setattr(base.DBModelBase.Meta, "host", "http://localhost:8000")
+    base.DBModelBase.create_table(
         read_capacity_units=10, write_capacity_units=10, wait=True
     )
     yield
-    db.DBModelBase.delete_table()
+    base.DBModelBase.delete_table()
 
 
 def test_meta():

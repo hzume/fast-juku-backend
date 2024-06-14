@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from api.db import MonthlyAttendanceModel, TeacherModel
+from api.models.base import MonthlyAttendanceModel, TeacherModel
 from api.myutils.const import DIGEST_SIZE
 
 
@@ -83,7 +83,7 @@ class Teacher(TeacherBase):
             teacher_model.fixed_salary = 0.0
 
         return Teacher(
-            id=teacher_model.id,
+            id=teacher_model.s_key,
             display_name=teacher_model.display_name,
             given_name=teacher_model.given_name,
             family_name=teacher_model.family_name,
@@ -104,7 +104,7 @@ class Teacher(TeacherBase):
             monthly_timeslot_list.fixed_salary = 0.0
 
         return Teacher(
-            id=monthly_timeslot_list.id,
+            id=monthly_timeslot_list.s_key,
             display_name=monthly_timeslot_list.display_name,
             given_name=monthly_timeslot_list.given_name,
             family_name=monthly_timeslot_list.family_name,

@@ -1,4 +1,4 @@
-from api.db import MetaModel
+from api.models.base import SchoolModel
 from api.schemas.meta import Meta, MetaBase
 
 
@@ -12,14 +12,14 @@ class MetaRepo:
 
     @classmethod
     def get(cls, school_id: str) -> Meta:
-        meta = Meta.from_model(MetaModel.get("meta", school_id))
+        meta = Meta.from_model(SchoolModel.get("meta", school_id))
         return meta
     
     @classmethod
     def list(cls) -> list[Meta]:
         metas = [
             Meta.from_model(meta_model) for meta_model 
-            in MetaModel.query("meta")
+            in SchoolModel.query("meta")
         ]
         return metas
 
