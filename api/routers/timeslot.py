@@ -180,10 +180,12 @@ def make_timeslots_from_table(
                 raise Exception(f"display_name type is {type(display_name)}")
 
             if type(cell1) not in [str, NoneType]:
-                raise Exception(f"cell1 type is {type(cell1)}")
+                cell1 = str(cell1)
+                # raise Exception(f"cell1 type is {type(cell1)}")
 
             if type(cell2) not in [str, NoneType]:
-                raise Exception(f"cell2 type is {type(cell2)}")
+                cell2 = str(cell2)
+                # raise Exception(f"cell2 type is {type(cell2)}")
 
             # 講師名がNoneであれば無視
             if display_name is None:

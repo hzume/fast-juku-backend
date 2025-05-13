@@ -1,0 +1,1251 @@
+{
+  "/home/zume/projects/fast-juku/fast-juku-backend/serverless.yml": {
+    "versionFramework": "4.14.3",
+    "servicePath": "/home/zume/projects/fast-juku/fast-juku-backend/serverless.yml",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "service": "fast-juku-backend",
+      "frameworkVersion": "4",
+      "custom": {
+        "table_name": {
+          "dev": "second_table",
+          "prod": "main_table"
+        }
+      },
+      "provider": {
+        "name": "aws",
+        "runtime": "python3.11",
+        "stage": "dev",
+        "region": "ap-northeast-3",
+        "iam": {
+          "role": {
+            "statements": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "dynamodb:*"
+                ],
+                "Resource": "arn:aws:dynamodb:ap-northeast-3:133507509735:table/*"
+              }
+            ]
+          }
+        },
+        "ecr": {
+          "scanOnPush": true,
+          "images": {
+            "fast_juku_backend": {
+              "path": "./",
+              "platform": "linux/amd64",
+              "file": "Dockerfile",
+              "buildArgs": {
+                "STAGE": "dev"
+              }
+            }
+          }
+        },
+        "environment": {
+          "REGION": "ap-northeast-3",
+          "TABLE_NAME": "second_table"
+        },
+        "versionFunctions": true,
+        "compiledCloudFormationTemplate": {
+          "AWSTemplateFormatVersion": "2010-09-09",
+          "Description": "The AWS CloudFormation template for this Serverless application",
+          "Resources": {
+            "MyFunctionLogGroup": {
+              "Type": "AWS::Logs::LogGroup",
+              "Properties": {
+                "LogGroupName": "/aws/lambda/fast-juku-backend-dev-myFunction"
+              }
+            },
+            "IamRoleLambdaExecution": {
+              "Type": "AWS::IAM::Role",
+              "Properties": {
+                "AssumeRolePolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": [
+                          "lambda.amazonaws.com"
+                        ]
+                      },
+                      "Action": [
+                        "sts:AssumeRole"
+                      ]
+                    }
+                  ]
+                },
+                "Policies": [
+                  {
+                    "PolicyName": {
+                      "Fn::Join": [
+                        "-",
+                        [
+                          "fast-juku-backend",
+                          "dev",
+                          "lambda"
+                        ]
+                      ]
+                    },
+                    "PolicyDocument": {
+                      "Version": "2012-10-17",
+                      "Statement": [
+                        {
+                          "Effect": "Allow",
+                          "Action": [
+                            "logs:CreateLogStream",
+                            "logs:CreateLogGroup",
+                            "logs:TagResource"
+                          ],
+                          "Resource": [
+                            {
+                              "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/fast-juku-backend-dev*:*"
+                            }
+                          ]
+                        },
+                        {
+                          "Effect": "Allow",
+                          "Action": [
+                            "logs:PutLogEvents"
+                          ],
+                          "Resource": [
+                            {
+                              "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/fast-juku-backend-dev*:*:*"
+                            }
+                          ]
+                        },
+                        {
+                          "Effect": "Allow",
+                          "Action": [
+                            "dynamodb:*"
+                          ],
+                          "Resource": "arn:aws:dynamodb:ap-northeast-3:133507509735:table/*"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "Path": "/",
+                "RoleName": {
+                  "Fn::Join": [
+                    "-",
+                    [
+                      "fast-juku-backend",
+                      "dev",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      "lambdaRole"
+                    ]
+                  ]
+                }
+              }
+            },
+            "MyFunctionLambdaFunction": {
+              "Type": "AWS::Lambda::Function",
+              "Properties": {
+                "Code": {
+                  "ImageUri": "133507509735.dkr.ecr.ap-northeast-3.amazonaws.com/serverless-fast-juku-backend-dev@sha256:d51d2696dd7c5c44c4c67468c8491b780f3c2e9497e950c6b614beb20c46c380"
+                },
+                "ImageConfig": {
+                  "Command": [
+                    "api.main.lambda_handler"
+                  ]
+                },
+                "PackageType": "Image",
+                "FunctionName": "fast-juku-backend-dev-myFunction",
+                "MemorySize": 1024,
+                "Timeout": 6,
+                "Environment": {
+                  "Variables": {
+                    "REGION": "ap-northeast-3",
+                    "TABLE_NAME": "second_table"
+                  }
+                },
+                "Role": {
+                  "Fn::GetAtt": [
+                    "IamRoleLambdaExecution",
+                    "Arn"
+                  ]
+                }
+              },
+              "DependsOn": [
+                "MyFunctionLogGroup"
+              ]
+            },
+            "MyFunctionLambdaVersionDrCrnd7vI7TaChhZf2qODLX0KsM0mPUVGxdB0wyhTc": {
+              "Type": "AWS::Lambda::Version",
+              "DeletionPolicy": "Retain",
+              "Properties": {
+                "FunctionName": {
+                  "Ref": "MyFunctionLambdaFunction"
+                },
+                "CodeSha256": "d51d2696dd7c5c44c4c67468c8491b780f3c2e9497e950c6b614beb20c46c380"
+              }
+            },
+            "MyFunctionLambdaFunctionUrl": {
+              "Type": "AWS::Lambda::Url",
+              "Properties": {
+                "AuthType": "NONE",
+                "TargetFunctionArn": {
+                  "Fn::GetAtt": [
+                    "MyFunctionLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "Cors": {
+                  "AllowCredentials": "<REDACTED>",
+                  "AllowHeaders": [
+                    "Content-Type",
+                    "X-Amz-Date",
+                    "Authorization",
+                    "X-Api-Key",
+                    "X-Amz-Security-Token",
+                    "X-Amzn-Trace-Id"
+                  ],
+                  "AllowMethods": [
+                    "*"
+                  ],
+                  "AllowOrigins": [
+                    "*"
+                  ]
+                }
+              }
+            },
+            "MyFunctionLambdaPermissionFnUrl": {
+              "Type": "AWS::Lambda::Permission",
+              "Properties": {
+                "FunctionName": {
+                  "Fn::GetAtt": [
+                    "MyFunctionLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "Action": "lambda:InvokeFunctionUrl",
+                "Principal": "*",
+                "FunctionUrlAuthType": "NONE"
+              }
+            },
+            "ApiGatewayRestApi": {
+              "Type": "AWS::ApiGateway::RestApi",
+              "Properties": {
+                "Name": "dev-fast-juku-backend",
+                "EndpointConfiguration": {
+                  "Types": [
+                    "EDGE"
+                  ]
+                },
+                "Policy": ""
+              }
+            },
+            "ApiGatewayResourceProxyVar": {
+              "Type": "AWS::ApiGateway::Resource",
+              "Properties": {
+                "ParentId": {
+                  "Fn::GetAtt": [
+                    "ApiGatewayRestApi",
+                    "RootResourceId"
+                  ]
+                },
+                "PathPart": "{proxy+}",
+                "RestApiId": {
+                  "Ref": "ApiGatewayRestApi"
+                }
+              }
+            },
+            "ApiGatewayMethodProxyVarAny": {
+              "Type": "AWS::ApiGateway::Method",
+              "Properties": {
+                "HttpMethod": "ANY",
+                "RequestParameters": {},
+                "ResourceId": {
+                  "Ref": "ApiGatewayResourceProxyVar"
+                },
+                "RestApiId": {
+                  "Ref": "ApiGatewayRestApi"
+                },
+                "ApiKeyRequired": "<REDACTED>",
+                "AuthorizationType": "NONE",
+                "Integration": {
+                  "IntegrationHttpMethod": "POST",
+                  "Type": "AWS_PROXY",
+                  "Uri": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:",
+                        {
+                          "Ref": "AWS::Partition"
+                        },
+                        ":apigateway:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":lambda:path/2015-03-31/functions/",
+                        {
+                          "Fn::GetAtt": [
+                            "MyFunctionLambdaFunction",
+                            "Arn"
+                          ]
+                        },
+                        "/invocations"
+                      ]
+                    ]
+                  }
+                },
+                "MethodResponses": []
+              },
+              "DependsOn": [
+                "MyFunctionLambdaPermissionApiGateway"
+              ]
+            },
+            "ApiGatewayDeployment1747142928674": {
+              "Type": "AWS::ApiGateway::Deployment",
+              "Properties": {
+                "RestApiId": {
+                  "Ref": "ApiGatewayRestApi"
+                },
+                "StageName": "dev"
+              },
+              "DependsOn": [
+                "ApiGatewayMethodProxyVarAny"
+              ]
+            },
+            "MyFunctionLambdaPermissionApiGateway": {
+              "Type": "AWS::Lambda::Permission",
+              "Properties": {
+                "FunctionName": {
+                  "Fn::GetAtt": [
+                    "MyFunctionLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":execute-api:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":",
+                      {
+                        "Ref": "ApiGatewayRestApi"
+                      },
+                      "/*/*"
+                    ]
+                  ]
+                }
+              }
+            }
+          },
+          "Outputs": {
+            "ServerlessDeploymentBucketName": {
+              "Value": "serverless-framework-deployments-ap-northeast-3-7c85b12f-3a12",
+              "Export": {
+                "Name": "sls-fast-juku-backend-dev-ServerlessDeploymentBucketName"
+              }
+            },
+            "MyFunctionLambdaFunctionQualifiedArn": {
+              "Description": "Current Lambda function version",
+              "Value": {
+                "Ref": "MyFunctionLambdaVersionDrCrnd7vI7TaChhZf2qODLX0KsM0mPUVGxdB0wyhTc"
+              },
+              "Export": {
+                "Name": "sls-fast-juku-backend-dev-MyFunctionLambdaFunctionQualifiedArn"
+              }
+            },
+            "MyFunctionLambdaFunctionUrl": {
+              "Description": "Lambda Function URL",
+              "Value": {
+                "Fn::GetAtt": [
+                  "MyFunctionLambdaFunctionUrl",
+                  "FunctionUrl"
+                ]
+              },
+              "Export": {
+                "Name": "sls-fast-juku-backend-dev-MyFunctionLambdaFunctionUrl"
+              }
+            },
+            "ServiceEndpoint": {
+              "Description": "URL of the service endpoint",
+              "Value": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "https://",
+                    {
+                      "Ref": "ApiGatewayRestApi"
+                    },
+                    ".execute-api.",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ".",
+                    {
+                      "Ref": "AWS::URLSuffix"
+                    },
+                    "/dev"
+                  ]
+                ]
+              },
+              "Export": {
+                "Name": "sls-fast-juku-backend-dev-ServiceEndpoint"
+              }
+            }
+          }
+        },
+        "vpc": {}
+      },
+      "functions": {
+        "myFunction": {
+          "image": {
+            "name": "fast_juku_backend",
+            "command": [
+              "api.main.lambda_handler"
+            ]
+          },
+          "url": {
+            "cors": true
+          },
+          "events": [
+            {
+              "http": {
+                "path": "{proxy+}",
+                "method": "any",
+                "integration": "AWS_PROXY"
+              }
+            }
+          ],
+          "name": "fast-juku-backend-dev-myFunction",
+          "package": {},
+          "memory": 1024,
+          "timeout": 6,
+          "vpc": {},
+          "versionLogicalId": "MyFunctionLambdaVersionDrCrnd7vI7TaChhZf2qODLX0KsM0mPUVGxdB0wyhTc"
+        }
+      }
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "python3.11",
+      "stage": "dev",
+      "region": "ap-northeast-3",
+      "iam": {
+        "role": {
+          "statements": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:*"
+              ],
+              "Resource": "arn:aws:dynamodb:ap-northeast-3:133507509735:table/*"
+            }
+          ]
+        }
+      },
+      "ecr": {
+        "scanOnPush": true,
+        "images": {
+          "fast_juku_backend": {
+            "path": "./",
+            "platform": "linux/amd64",
+            "file": "Dockerfile",
+            "buildArgs": {
+              "STAGE": "dev"
+            }
+          }
+        }
+      },
+      "environment": {
+        "REGION": "ap-northeast-3",
+        "TABLE_NAME": "second_table"
+      },
+      "versionFunctions": true,
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "MyFunctionLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/fast-juku-backend-dev-myFunction"
+            }
+          },
+          "IamRoleLambdaExecution": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    },
+                    "Action": [
+                      "sts:AssumeRole"
+                    ]
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": {
+                    "Fn::Join": [
+                      "-",
+                      [
+                        "fast-juku-backend",
+                        "dev",
+                        "lambda"
+                      ]
+                    ]
+                  },
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogStream",
+                          "logs:CreateLogGroup",
+                          "logs:TagResource"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/fast-juku-backend-dev*:*"
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/fast-juku-backend-dev*:*:*"
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "dynamodb:*"
+                        ],
+                        "Resource": "arn:aws:dynamodb:ap-northeast-3:133507509735:table/*"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Path": "/",
+              "RoleName": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    "fast-juku-backend",
+                    "dev",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    "lambdaRole"
+                  ]
+                ]
+              }
+            }
+          },
+          "MyFunctionLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "ImageUri": "133507509735.dkr.ecr.ap-northeast-3.amazonaws.com/serverless-fast-juku-backend-dev@sha256:d51d2696dd7c5c44c4c67468c8491b780f3c2e9497e950c6b614beb20c46c380"
+              },
+              "ImageConfig": {
+                "Command": [
+                  "api.main.lambda_handler"
+                ]
+              },
+              "PackageType": "Image",
+              "FunctionName": "fast-juku-backend-dev-myFunction",
+              "MemorySize": 1024,
+              "Timeout": 6,
+              "Environment": {
+                "Variables": {
+                  "REGION": "ap-northeast-3",
+                  "TABLE_NAME": "second_table"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "MyFunctionLogGroup"
+            ]
+          },
+          "MyFunctionLambdaVersionDrCrnd7vI7TaChhZf2qODLX0KsM0mPUVGxdB0wyhTc": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "MyFunctionLambdaFunction"
+              },
+              "CodeSha256": "d51d2696dd7c5c44c4c67468c8491b780f3c2e9497e950c6b614beb20c46c380"
+            }
+          },
+          "MyFunctionLambdaFunctionUrl": {
+            "Type": "AWS::Lambda::Url",
+            "Properties": {
+              "AuthType": "NONE",
+              "TargetFunctionArn": {
+                "Fn::GetAtt": [
+                  "MyFunctionLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Cors": {
+                "AllowCredentials": "<REDACTED>",
+                "AllowHeaders": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amzn-Trace-Id"
+                ],
+                "AllowMethods": [
+                  "*"
+                ],
+                "AllowOrigins": [
+                  "*"
+                ]
+              }
+            }
+          },
+          "MyFunctionLambdaPermissionFnUrl": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "MyFunctionLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunctionUrl",
+              "Principal": "*",
+              "FunctionUrlAuthType": "NONE"
+            }
+          },
+          "ApiGatewayRestApi": {
+            "Type": "AWS::ApiGateway::RestApi",
+            "Properties": {
+              "Name": "dev-fast-juku-backend",
+              "EndpointConfiguration": {
+                "Types": [
+                  "EDGE"
+                ]
+              },
+              "Policy": ""
+            }
+          },
+          "ApiGatewayResourceProxyVar": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Fn::GetAtt": [
+                  "ApiGatewayRestApi",
+                  "RootResourceId"
+                ]
+              },
+              "PathPart": "{proxy+}",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodProxyVarAny": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "ANY",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceProxyVar"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": "<REDACTED>",
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "MyFunctionLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "MyFunctionLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayDeployment1747142928674": {
+            "Type": "AWS::ApiGateway::Deployment",
+            "Properties": {
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "StageName": "dev"
+            },
+            "DependsOn": [
+              "ApiGatewayMethodProxyVarAny"
+            ]
+          },
+          "MyFunctionLambdaPermissionApiGateway": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "MyFunctionLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com",
+              "SourceArn": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":execute-api:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":",
+                    {
+                      "Ref": "ApiGatewayRestApi"
+                    },
+                    "/*/*"
+                  ]
+                ]
+              }
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": "serverless-framework-deployments-ap-northeast-3-7c85b12f-3a12",
+            "Export": {
+              "Name": "sls-fast-juku-backend-dev-ServerlessDeploymentBucketName"
+            }
+          },
+          "MyFunctionLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "MyFunctionLambdaVersionDrCrnd7vI7TaChhZf2qODLX0KsM0mPUVGxdB0wyhTc"
+            },
+            "Export": {
+              "Name": "sls-fast-juku-backend-dev-MyFunctionLambdaFunctionQualifiedArn"
+            }
+          },
+          "MyFunctionLambdaFunctionUrl": {
+            "Description": "Lambda Function URL",
+            "Value": {
+              "Fn::GetAtt": [
+                "MyFunctionLambdaFunctionUrl",
+                "FunctionUrl"
+              ]
+            },
+            "Export": {
+              "Name": "sls-fast-juku-backend-dev-MyFunctionLambdaFunctionUrl"
+            }
+          },
+          "ServiceEndpoint": {
+            "Description": "URL of the service endpoint",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Ref": "ApiGatewayRestApi"
+                  },
+                  ".execute-api.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".",
+                  {
+                    "Ref": "AWS::URLSuffix"
+                  },
+                  "/dev"
+                ]
+              ]
+            },
+            "Export": {
+              "Name": "sls-fast-juku-backend-dev-ServiceEndpoint"
+            }
+          }
+        }
+      },
+      "vpc": {}
+    },
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": false,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "serviceRawFile": "service: fast-juku-backend\n\nframeworkVersion: '4'\n\ncustom:\n  table_name:\n    dev: second_table\n    prod: main_table\n\nprovider:\n  name: aws\n  runtime: python3.11\n  stage: ${opt:stage, 'dev'}\n  region: ap-northeast-3\n  iam:\n    role:\n      statements:\n          - Effect: 'Allow'\n            Action:\n              - 'dynamodb:*'\n            Resource:\n              - \"arn:aws:dynamodb:ap-northeast-3:133507509735:table/*\"\n  ecr:\n    scanOnPush: true\n    # Definitions of images that later can be referenced by key in `function.image`\n    images:\n      fast_juku_backend:\n        path: ./\n        # Dockerfile that will be used when building the image locally (default: 'Dockerfile')\n        platform: linux/amd64 \n        file: Dockerfile\n        buildArgs:\n          STAGE: ${sls:stage}\n  environment:\n    REGION: ${self:provider.region}\n    TABLE_NAME: ${self:custom.table_name.${self:provider.stage}}\n\nfunctions:\n  myFunction:\n    image:\n      name: fast_juku_backend\n      command:\n        - api.main.lambda_handler\n    url:\n      cors: true\n    events:\n      - http:\n          path: /{proxy+}\n          method: ANY\n    \n",
+    "command": [
+      "deploy"
+    ],
+    "options": {
+      "stage": "dev",
+      "aws-profile": "zume",
+      "region": "ap-northeast-3",
+      "debug": "*"
+    },
+    "orgId": "22b02b7d-f41f-4e85-b1e0-1a5087938ff0",
+    "orgName": "hzume",
+    "userId": "45Wgt0C7ZMsp5Jy6y2",
+    "userName": "hzume",
+    "serviceProviderAwsAccountId": "133507509735",
+    "serviceProviderAwsCfStackName": "fast-juku-backend-dev",
+    "serviceProviderAwsCfStackId": "arn:aws:cloudformation:ap-northeast-3:133507509735:stack/fast-juku-backend-dev/7e07f480-2ffc-11f0-a475-0ed900600c9b",
+    "serviceProviderAwsCfStackCreated": "2025-05-13T13:16:34.737Z",
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": "CREATE_COMPLETE",
+    "serviceProviderAwsCfStackOutputs": [
+      {
+        "OutputKey": "MyFunctionLambdaFunctionQualifiedArn",
+        "OutputValue": "arn:aws:lambda:ap-northeast-3:133507509735:function:fast-juku-backend-dev-myFunction:29",
+        "Description": "Current Lambda function version",
+        "ExportName": "sls-fast-juku-backend-dev-MyFunctionLambdaFunctionQualifiedArn"
+      },
+      {
+        "OutputKey": "MyFunctionLambdaFunctionUrl",
+        "OutputValue": "https://iwxfu6sxr5fac4wqfmqx3uploy0bladp.lambda-url.ap-northeast-3.on.aws/",
+        "Description": "Lambda Function URL",
+        "ExportName": "sls-fast-juku-backend-dev-MyFunctionLambdaFunctionUrl"
+      },
+      {
+        "OutputKey": "ServiceEndpoint",
+        "OutputValue": "https://7jyprzdbhk.execute-api.ap-northeast-3.amazonaws.com/dev",
+        "Description": "URL of the service endpoint",
+        "ExportName": "sls-fast-juku-backend-dev-ServiceEndpoint"
+      },
+      {
+        "OutputKey": "ServerlessDeploymentBucketName",
+        "OutputValue": "serverless-framework-deployments-ap-northeast-3-7c85b12f-3a12",
+        "ExportName": "sls-fast-juku-backend-dev-ServerlessDeploymentBucketName"
+      }
+    ],
+    "compiledCloudFormationTemplate": {
+      "AWSTemplateFormatVersion": "2010-09-09",
+      "Description": "The AWS CloudFormation template for this Serverless application",
+      "Resources": {
+        "MyFunctionLogGroup": {
+          "Type": "AWS::Logs::LogGroup",
+          "Properties": {
+            "LogGroupName": "/aws/lambda/fast-juku-backend-dev-myFunction"
+          }
+        },
+        "IamRoleLambdaExecution": {
+          "Type": "AWS::IAM::Role",
+          "Properties": {
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": [
+                      "lambda.amazonaws.com"
+                    ]
+                  },
+                  "Action": [
+                    "sts:AssumeRole"
+                  ]
+                }
+              ]
+            },
+            "Policies": [
+              {
+                "PolicyName": {
+                  "Fn::Join": [
+                    "-",
+                    [
+                      "fast-juku-backend",
+                      "dev",
+                      "lambda"
+                    ]
+                  ]
+                },
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "logs:CreateLogStream",
+                        "logs:CreateLogGroup",
+                        "logs:TagResource"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/fast-juku-backend-dev*:*"
+                        }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/fast-juku-backend-dev*:*:*"
+                        }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "dynamodb:*"
+                      ],
+                      "Resource": "arn:aws:dynamodb:ap-northeast-3:133507509735:table/*"
+                    }
+                  ]
+                }
+              }
+            ],
+            "Path": "/",
+            "RoleName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "fast-juku-backend",
+                  "dev",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "lambdaRole"
+                ]
+              ]
+            }
+          }
+        },
+        "MyFunctionLambdaFunction": {
+          "Type": "AWS::Lambda::Function",
+          "Properties": {
+            "Code": {
+              "ImageUri": "133507509735.dkr.ecr.ap-northeast-3.amazonaws.com/serverless-fast-juku-backend-dev@sha256:d51d2696dd7c5c44c4c67468c8491b780f3c2e9497e950c6b614beb20c46c380"
+            },
+            "ImageConfig": {
+              "Command": [
+                "api.main.lambda_handler"
+              ]
+            },
+            "PackageType": "Image",
+            "FunctionName": "fast-juku-backend-dev-myFunction",
+            "MemorySize": 1024,
+            "Timeout": 6,
+            "Environment": {
+              "Variables": {
+                "REGION": "ap-northeast-3",
+                "TABLE_NAME": "second_table"
+              }
+            },
+            "Role": {
+              "Fn::GetAtt": [
+                "IamRoleLambdaExecution",
+                "Arn"
+              ]
+            }
+          },
+          "DependsOn": [
+            "MyFunctionLogGroup"
+          ]
+        },
+        "MyFunctionLambdaVersionDrCrnd7vI7TaChhZf2qODLX0KsM0mPUVGxdB0wyhTc": {
+          "Type": "AWS::Lambda::Version",
+          "DeletionPolicy": "Retain",
+          "Properties": {
+            "FunctionName": {
+              "Ref": "MyFunctionLambdaFunction"
+            },
+            "CodeSha256": "d51d2696dd7c5c44c4c67468c8491b780f3c2e9497e950c6b614beb20c46c380"
+          }
+        },
+        "MyFunctionLambdaFunctionUrl": {
+          "Type": "AWS::Lambda::Url",
+          "Properties": {
+            "AuthType": "NONE",
+            "TargetFunctionArn": {
+              "Fn::GetAtt": [
+                "MyFunctionLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Cors": {
+              "AllowHeaders": [
+                "Content-Type",
+                "X-Amz-Date",
+                "Authorization",
+                "X-Api-Key",
+                "X-Amz-Security-Token",
+                "X-Amzn-Trace-Id"
+              ],
+              "AllowMethods": [
+                "*"
+              ],
+              "AllowOrigins": [
+                "*"
+              ]
+            }
+          }
+        },
+        "MyFunctionLambdaPermissionFnUrl": {
+          "Type": "AWS::Lambda::Permission",
+          "Properties": {
+            "FunctionName": {
+              "Fn::GetAtt": [
+                "MyFunctionLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Action": "lambda:InvokeFunctionUrl",
+            "Principal": "*",
+            "FunctionUrlAuthType": "NONE"
+          }
+        },
+        "ApiGatewayRestApi": {
+          "Type": "AWS::ApiGateway::RestApi",
+          "Properties": {
+            "Name": "dev-fast-juku-backend",
+            "EndpointConfiguration": {
+              "Types": [
+                "EDGE"
+              ]
+            },
+            "Policy": ""
+          }
+        },
+        "ApiGatewayResourceProxyVar": {
+          "Type": "AWS::ApiGateway::Resource",
+          "Properties": {
+            "ParentId": {
+              "Fn::GetAtt": [
+                "ApiGatewayRestApi",
+                "RootResourceId"
+              ]
+            },
+            "PathPart": "{proxy+}",
+            "RestApiId": {
+              "Ref": "ApiGatewayRestApi"
+            }
+          }
+        },
+        "ApiGatewayMethodProxyVarAny": {
+          "Type": "AWS::ApiGateway::Method",
+          "Properties": {
+            "HttpMethod": "ANY",
+            "RequestParameters": {},
+            "ResourceId": {
+              "Ref": "ApiGatewayResourceProxyVar"
+            },
+            "RestApiId": {
+              "Ref": "ApiGatewayRestApi"
+            },
+            "ApiKeyRequired": "<REDACTED>",
+            "AuthorizationType": "NONE",
+            "Integration": {
+              "IntegrationHttpMethod": "POST",
+              "Type": "AWS_PROXY",
+              "Uri": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":apigateway:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":lambda:path/2015-03-31/functions/",
+                    {
+                      "Fn::GetAtt": [
+                        "MyFunctionLambdaFunction",
+                        "Arn"
+                      ]
+                    },
+                    "/invocations"
+                  ]
+                ]
+              }
+            },
+            "MethodResponses": []
+          },
+          "DependsOn": [
+            "MyFunctionLambdaPermissionApiGateway"
+          ]
+        },
+        "ApiGatewayDeployment1747142928674": {
+          "Type": "AWS::ApiGateway::Deployment",
+          "Properties": {
+            "RestApiId": {
+              "Ref": "ApiGatewayRestApi"
+            },
+            "StageName": "dev"
+          },
+          "DependsOn": [
+            "ApiGatewayMethodProxyVarAny"
+          ]
+        },
+        "MyFunctionLambdaPermissionApiGateway": {
+          "Type": "AWS::Lambda::Permission",
+          "Properties": {
+            "FunctionName": {
+              "Fn::GetAtt": [
+                "MyFunctionLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Action": "lambda:InvokeFunction",
+            "Principal": "apigateway.amazonaws.com",
+            "SourceArn": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition"
+                  },
+                  ":execute-api:",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ":",
+                  {
+                    "Ref": "AWS::AccountId"
+                  },
+                  ":",
+                  {
+                    "Ref": "ApiGatewayRestApi"
+                  },
+                  "/*/*"
+                ]
+              ]
+            }
+          }
+        }
+      },
+      "Outputs": {
+        "ServerlessDeploymentBucketName": {
+          "Value": "serverless-framework-deployments-ap-northeast-3-7c85b12f-3a12",
+          "Export": {
+            "Name": "sls-fast-juku-backend-dev-ServerlessDeploymentBucketName"
+          }
+        },
+        "MyFunctionLambdaFunctionQualifiedArn": {
+          "Description": "Current Lambda function version",
+          "Value": {
+            "Ref": "MyFunctionLambdaVersionDrCrnd7vI7TaChhZf2qODLX0KsM0mPUVGxdB0wyhTc"
+          },
+          "Export": {
+            "Name": "sls-fast-juku-backend-dev-MyFunctionLambdaFunctionQualifiedArn"
+          }
+        },
+        "MyFunctionLambdaFunctionUrl": {
+          "Description": "Lambda Function URL",
+          "Value": {
+            "Fn::GetAtt": [
+              "MyFunctionLambdaFunctionUrl",
+              "FunctionUrl"
+            ]
+          },
+          "Export": {
+            "Name": "sls-fast-juku-backend-dev-MyFunctionLambdaFunctionUrl"
+          }
+        },
+        "ServiceEndpoint": {
+          "Description": "URL of the service endpoint",
+          "Value": {
+            "Fn::Join": [
+              "",
+              [
+                "https://",
+                {
+                  "Ref": "ApiGatewayRestApi"
+                },
+                ".execute-api.",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ".",
+                {
+                  "Ref": "AWS::URLSuffix"
+                },
+                "/dev"
+              ]
+            ]
+          },
+          "Export": {
+            "Name": "sls-fast-juku-backend-dev-ServiceEndpoint"
+          }
+        }
+      }
+    }
+  }
+}
