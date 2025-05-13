@@ -46,13 +46,29 @@
     - `delete`: GET (`record_type=attendance#2023-07`, `id=id`) DELETE
 
 # どうあるべきか
-- `MetaModel`
-    - `list`を実現するために`school_id`のリストを持つitemを作成し、`create`,`delete`時に更新する(`p_key="meta_list",s_key=0`)
-    - `p_key={school_id}`
-    - `s_key="meta"`
+- `SchoolModel`
+    - `list`を実現するために`school_id`のリストを持つitemを作成し、create,delete時に更新する(p_key="meta_list",s_key=0)
+    - p_key={school_id}
+    - s_key="school"
+
+- `SchoolListModel`
+    - p_key="school_list"
+    - s_key="0"
 
 - `TeacherModel`
-    - `p_key={school_id}`
-    - `s_key="teacher#{teacher_id}"`
+    - p_key={school_id}
+    - s_key="teacher#{teacher_id}"
 
+- `TeacherListModel`
+    - p_key={school_id}
+    - s_key="teachers"
 
+- `TeacherShiftModel`
+    - p_key={teacher_id}
+    - s_key="YYYY-MM"
+
+- `StudentModel`
+
+- `StudentScheduleModel`
+    - p_key={student_id}
+    - s_key="YYYY-MM"

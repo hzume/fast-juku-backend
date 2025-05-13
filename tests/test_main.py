@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Generator
 
@@ -7,15 +8,11 @@ import yaml
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from api.models import base
-from api.main import app
-from api.schemas.meta import Meta
-from api.schemas.person import Teacher, TeacherBase
-from api.schemas.timeslot import (
-    MonthlyAttendance,
-    TimeslotJS,
-    UpdateAttendanceReq,
-)
+os.environ["REGION"] = "ap-northeast-1"
+os.environ["TABLE_NAME"] = "test-table"
+from api.main import app # noqa
+import api.models as models # noqa
+import api.schemas as schemas # noqa
 
 client = TestClient(app)
 
@@ -39,20 +36,20 @@ def read_timetable_excel(file_path: str, month: int):
 
 @pytest.fixture(autouse=True)
 def set_db() -> Generator:
-    setattr(base.DBModelBase.Meta, "host", "http://localhost:8000")
-    base.DBModelBase.create_table(
+    setattr(models.DBModelBase.Meta, "host", "http://localhost:8000")
+    models.DBModelBase.create_table(
         read_capacity_units=10, write_capacity_units=10, wait=True
     )
     yield
-    base.DBModelBase.delete_table()
+    models.DBModelBase.delete_table()
 
 
 def test_meta():
     res_1 = client.post("/metas/", json={"school_name": "テスト校"})
     assert res_1.status_code == status.HTTP_201_CREATED
-    meta_1 = Meta(**res_1.json())
+    meta_1 = schemas.Meta(**res_1.json())
 
-    assert meta_1 == Meta(**client.get(f"/metas/{meta_1.school_id}").json())
+    assert meta_1 == schemas.Meta(**client.get(f"/metas/{meta_1.school_id}").json())
     assert client.get("/metas/hogehoge").status_code == status.HTTP_404_NOT_FOUND
     assert (
         client.post("/metas/", json={"school_name": "テスト校"}).status_code
@@ -61,10 +58,10 @@ def test_meta():
 
     res_2 = client.post("/metas/", json={"school_name": "テスト校2"})
     assert res_2.status_code == status.HTTP_201_CREATED
-    meta_2 = Meta(**res_2.json())
+    meta_2 = schemas.Meta(**res_2.json())
 
     assert [meta_1, meta_2] == [
-        Meta(**meta_json) for meta_json in client.get("/metas/").json()
+        schemas.Meta(**meta_json) for meta_json in client.get("/metas/").json()
     ]
 
     res_3 = client.put(f"/metas/{meta_1.school_id}", json={"school_name": "テスト校3"})
@@ -78,17 +75,17 @@ def test_meta():
     )
 
     assert client.delete(f"/metas/{meta_2.school_id}").status_code == status.HTTP_200_OK
-    assert [meta_3] == [Meta(**meta_json) for meta_json in client.get("/metas/").json()]
+    assert [meta_3] == [schemas.Meta(**meta_json) for meta_json in client.get("/metas/").json()]
 
     assert client.delete("/metas/hogehoge").status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_teacher():
-    school_id = Meta(
+    school_id = schemas.Meta(
         **client.post("/metas/", json={"school_name": "テスト校"}).json()
     ).school_id
 
-    teacher_base_1 = TeacherBase(
+    teacher_base_1 = schemas.TeacherBase(
         display_name="test",
         given_name="test",
         family_name="test",
@@ -100,12 +97,12 @@ def test_teacher():
     )
     res_1 = client.post("/teachers/", json=teacher_base_1.model_dump())
     assert res_1.status_code == status.HTTP_201_CREATED
-    teacher_1 = Teacher(**res_1.json())
+    teacher_1 = schemas.Teacher(**res_1.json())
 
-    assert teacher_1 == Teacher(**client.get(f"/teachers/{teacher_1.id}").json())
-    assert teacher_1 == Teacher(**client.get(f"/teachers/sub/{teacher_1.sub}").json())
+    assert teacher_1 == schemas.Teacher(**client.get(f"/teachers/{teacher_1.id}").json())
+    assert teacher_1 == schemas.Teacher(**client.get(f"/teachers/sub/{teacher_1.sub}").json())
     assert (
-        Teacher(**client.get("/teachers/sub/hogehoge").json()).display_name == "Guest"
+        schemas.Teacher(**client.get("/teachers/sub/hogehoge").json()).display_name == "Guest"
     )
     assert client.get("/teachers/hogehoge").status_code == status.HTTP_404_NOT_FOUND
 
@@ -114,7 +111,7 @@ def test_teacher():
         == status.HTTP_409_CONFLICT
     )
 
-    teacher_base_2 = TeacherBase(
+    teacher_base_2 = schemas.TeacherBase(
         display_name="test2",
         given_name="test2",
         family_name="test2",
@@ -125,16 +122,16 @@ def test_teacher():
     )
     res_2 = client.post("/teachers/", json=teacher_base_2.model_dump())
     assert res_2.status_code == status.HTTP_201_CREATED
-    teacher_2 = Teacher(**res_2.json())
+    teacher_2 = schemas.Teacher(**res_2.json())
 
     assert sorted([teacher_1, teacher_2]) == sorted(
         [
-            Teacher(**teacher_json)
+            schemas.Teacher(**teacher_json)
             for teacher_json in client.get(f"/teachers/bulk/{school_id}").json()
         ],
     )
 
-    teacher_base_3 = TeacherBase(
+    teacher_base_3 = schemas.TeacherBase(
         display_name="test3",
         given_name="test3",
         family_name="test3",
@@ -145,8 +142,8 @@ def test_teacher():
     )
     res_3 = client.put(f"/teachers/{teacher_1.id}", json=teacher_base_3.model_dump())
     assert res_3.status_code == status.HTTP_200_OK
-    teacher_3 = Teacher(**res_3.json())
-    assert teacher_3 == Teacher(**client.get(f"/teachers/{teacher_1.id}").json())
+    teacher_3 = schemas.Teacher(**res_3.json())
+    assert teacher_3 == schemas.Teacher(**client.get(f"/teachers/{teacher_1.id}").json())
 
     assert (
         client.put("/teachers/hogehoge", json=teacher_base_3.model_dump()).status_code
@@ -155,7 +152,7 @@ def test_teacher():
 
     assert client.delete(f"/teachers/{teacher_2.id}").status_code == status.HTTP_200_OK
     assert [teacher_3] == [
-        Teacher(**teacher_json)
+        schemas.Teacher(**teacher_json)
         for teacher_json in client.get(f"/teachers/bulk/{school_id}").json()
     ]
 
@@ -166,7 +163,7 @@ def test_calc_salary(snapshot):
     snapshot_dir = Path("tests/snapshots")
     snapshot.snapshot_dir = str(snapshot_dir)
 
-    meta = Meta(**client.post("/metas/", json={"school_name": "テスト校"}).json())
+    meta = schemas.Meta(**client.post("/metas/", json={"school_name": "テスト校"}).json())
     school_id = meta.school_id
 
     # send csv file
@@ -178,7 +175,7 @@ def test_calc_salary(snapshot):
 
     # get teacher list
     res = client.get(f"teachers/bulk/{school_id}")
-    teacher_list = [Teacher(**teacher) for teacher in res.json()]
+    teacher_list = [schemas.Teacher(**teacher) for teacher in res.json()]
     snapshot.assert_match(yaml.dump(teacher_list), "teacher_list_from_csv.yml")
 
     month_1 = 11
@@ -200,7 +197,7 @@ def test_calc_salary(snapshot):
     res = client.get(f"salary/bulk/{school_id}?year={year}&month={month_1}")
     assert res.status_code == status.HTTP_200_OK, res.json()["detail"]
     monthly_attendance_list_between = [
-        MonthlyAttendance(**monthly_attendance) for monthly_attendance in res.json()
+        schemas.MonthlyAttendance(**monthly_attendance) for monthly_attendance in res.json()
     ]
     snapshot.assert_match(
         yaml.dump(monthly_attendance_list_between),
@@ -212,14 +209,14 @@ def test_calc_salary(snapshot):
         f"salary/{monthly_attendance_0.teacher.id}?year={year}&month={month_1}"
     )
     assert res.status_code == status.HTTP_200_OK, res.json()["detail"]
-    assert monthly_attendance_0 == MonthlyAttendance(**res.json())
+    assert monthly_attendance_0 == schemas.MonthlyAttendance(**res.json())
 
     res = client.get(
         f"salary/bulk/{school_id}/between?start_year={year}&start_month={month_2}&end_year={year}&end_month={month_1}"
     )
     assert res.status_code == status.HTTP_200_OK, res.json()["detail"]
     monthly_attendance_list_between = [
-        MonthlyAttendance(**monthly_attendance) for monthly_attendance in res.json()
+        schemas.MonthlyAttendance(**monthly_attendance) for monthly_attendance in res.json()
     ]
     snapshot.assert_match(
         yaml.dump(monthly_attendance_list_between),
@@ -227,11 +224,11 @@ def test_calc_salary(snapshot):
     )
 
     timeslot_js_list = [
-        TimeslotJS.from_timeslot(timeslot)
+        schemas.TimeslotJS.from_timeslot(timeslot)
         for timeslot in monthly_attendance_0.timeslot_list
     ]
 
-    req = UpdateAttendanceReq(
+    req = schemas.UpdateAttendanceReq(
         timeslot_js_list=timeslot_js_list,
         extra_payment=1000,
         remark="test",
@@ -243,8 +240,8 @@ def test_calc_salary(snapshot):
         json=req.model_dump(),
     )
     assert res.status_code == status.HTTP_200_OK, res.json()["detail"]
-    updated_monthly_attendance = MonthlyAttendance(**res.json())
-    assert updated_monthly_attendance == MonthlyAttendance(
+    updated_monthly_attendance = schemas.MonthlyAttendance(**res.json())
+    assert updated_monthly_attendance == schemas.MonthlyAttendance(
         **client.get(
             f"salary/{monthly_attendance_0.teacher.id}?year={year}&month={month_1}"
         ).json()

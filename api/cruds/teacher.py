@@ -1,5 +1,5 @@
-from api.models.base import TeacherModel
-from api.schemas.person import Teacher, TeacherBase
+from api.models import TeacherModel
+from api.schemas import Teacher, TeacherBase
 
 
 class TeacherRepo:

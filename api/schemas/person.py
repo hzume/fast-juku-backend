@@ -5,8 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from api.models.base import MonthlyAttendanceModel, TeacherModel
-from api.myutils.const import DIGEST_SIZE
+import api.models as models
+from api.myutils import DIGEST_SIZE
 
 
 @total_ordering
@@ -70,15 +70,15 @@ class Teacher(TeacherBase):
     def update(self, teacher_base: TeacherBase) -> "Teacher":
         return Teacher(id=self.id, **teacher_base.model_dump())
 
-    def to_model(self) -> TeacherModel:
-        return TeacherModel(
+    def to_model(self) -> models.TeacherModel:
+        return models.TeacherModel(
             record_type="teacher",
             timestamp=datetime.datetime.now().isoformat(),
             **self.model_dump(),
         )
 
     @classmethod
-    def from_model(cls, teacher_model: TeacherModel) -> "Teacher":
+    def from_model(cls, teacher_model: models.TeacherModel) -> "Teacher":
         if teacher_model.fixed_salary is None:
             teacher_model.fixed_salary = 0.0
 
@@ -98,7 +98,7 @@ class Teacher(TeacherBase):
 
     @classmethod
     def from_model_monthly(
-        cls, monthly_timeslot_list: MonthlyAttendanceModel
+        cls, monthly_timeslot_list: models.MonthlyAttendanceModel
     ) -> "Teacher":
         if monthly_timeslot_list.fixed_salary is None:
             monthly_timeslot_list.fixed_salary = 0.0

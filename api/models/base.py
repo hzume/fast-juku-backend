@@ -1,3 +1,4 @@
+import os
 
 from pynamodb.attributes import (
     BooleanAttribute,
@@ -12,10 +13,8 @@ from pynamodb.models import Model
 
 class DBModelBase(Model):
     class Meta:
-        # table_name = os.environ["TABLE_NAME"]
-        # region = os.environ["REGION"]
-        table_name = "attendance-management"
-        region = "ap-northeast-1"
+        table_name = os.environ["TABLE_NAME"]
+        region = os.environ["REGION"]
         # host = 'http://localhost:8000'
         
         read_capacity_units = 25
@@ -36,8 +35,6 @@ class TimeslotMap(MapAttribute):
     end_time = UnicodeAttribute()
     timeslot_number = NumberAttribute()
     timeslot_type = UnicodeAttribute() 
-
-
 
 
 # record_type = "attendance#2023-07"
