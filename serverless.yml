@@ -1,0 +1,50 @@
+service: fast-juku-backend
+
+frameworkVersion: '4'
+
+custom:
+  table_name:
+    dev: second_table
+    prod: main_table
+
+provider:
+  name: aws
+  runtime: python3.11
+  stage: ${opt:stage, 'dev'}
+  region: ap-northeast-3
+  iam:
+    role:
+      statements:
+          - Effect: 'Allow'
+            Action:
+              - 'dynamodb:*'
+            Resource:
+              - "arn:aws:dynamodb:ap-northeast-3:133507509735:table/*"
+  ecr:
+    scanOnPush: true
+    # Definitions of images that later can be referenced by key in `function.image`
+    images:
+      fast_juku_backend:
+        path: ./
+        # Dockerfile that will be used when building the image locally (default: 'Dockerfile')
+        platform: linux/amd64 
+        file: Dockerfile
+        buildArgs:
+          STAGE: ${sls:stage}
+  environment:
+    REGION: ${self:provider.region}
+    TABLE_NAME: ${self:custom.table_name.${self:provider.stage}}
+
+functions:
+  myFunction:
+    image:
+      name: fast_juku_backend
+      command:
+        - api.main.lambda_handler
+    url:
+      cors: true
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
+    

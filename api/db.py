@@ -1,7 +1,15 @@
-import datetime
+import os
+
+from pynamodb.attributes import (
+    BooleanAttribute,
+    DiscriminatorAttribute,
+    ListAttribute,
+    MapAttribute,
+    NumberAttribute,
+    UnicodeAttribute,
+)
+from pynamodb.indexes import AllProjection, GlobalSecondaryIndex, LocalSecondaryIndex
 from pynamodb.models import Model
-from pynamodb.indexes import LocalSecondaryIndex, GlobalSecondaryIndex, AllProjection, IncludeProjection
-from pynamodb.attributes import UnicodeAttribute, NumberAttribute, UTCDateTimeAttribute, UnicodeSetAttribute, BooleanAttribute, MapAttribute, ListAttribute, DiscriminatorAttribute
 
 
 class SchoolIndex(GlobalSecondaryIndex):
@@ -27,8 +35,9 @@ class SubIndex(LocalSecondaryIndex):
 
 class DBModelBase(Model):
     class Meta:
-        table_name = 'main_table'
-        region = 'ap-northeast-3'
+        table_name = os.environ["TABLE_NAME"]
+        region = os.environ["REGION"]
+        # host = 'http://localhost:8000'
         
         read_capacity_units = 25
         write_capacity_units = 25
@@ -56,9 +65,6 @@ class DBModelBase(Model):
     
     sub = UnicodeAttribute(null=True)
 
-
-# record_type = "timeslot#2023-07-14#1"
-# id = UID
 # ある講師が2023年7月14日の1限目に担当する講義など
 class TimeslotMap(MapAttribute):
     day = NumberAttribute()
@@ -66,6 +72,17 @@ class TimeslotMap(MapAttribute):
     end_time = UnicodeAttribute()
     timeslot_number = NumberAttribute()
     timeslot_type = UnicodeAttribute()
+
+
+class TimeslotWithNameMap(TimeslotMap):
+    teacher_id = UnicodeAttribute()
+    display_name = UnicodeAttribute()
+
+# record_type = "timetable#2023-07"
+class TimetableModel(DBModelBase, discriminator="timetable"):
+    year = NumberAttribute()
+    month = NumberAttribute()
+    timeslot_with_name_list = ListAttribute(of=TimeslotWithNameMap)
 
 
 # record_type = "attendance#2023-07"

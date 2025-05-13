@@ -19,6 +19,7 @@ resolve_s3 = true
 resolve_image_repos = true
 s3_prefix = "fast-juku-backend"
 region = "ap-northeast-3"
+parameter_overrides = "StageName=\"Dev\""
 
 [default.package.parameters]
 resolve_s3 = true

@@ -1,5 +1,9 @@
 .vscode/
 tests/data/*
+dynamodb_data/
+bin/
+**/__pycache__
+node_modules/
 
 # Created by https://www.gitignore.io/api/osx,linux,python,windows,pycharm,visualstudiocode
 

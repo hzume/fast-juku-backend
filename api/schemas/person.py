@@ -1,18 +1,30 @@
 import datetime
-from typing import Literal, Self
+from functools import total_ordering
 from hashlib import shake_128
-from pydantic import BaseModel, model_validator
+from typing import Literal
+
+from pydantic import BaseModel
 
 from api.db import MonthlyAttendanceModel, TeacherModel
-from api.myutils.utilfunc import YearMonth
 from api.myutils.const import DIGEST_SIZE
 
 
+@total_ordering
 class PersonBase(BaseModel):
     display_name: str
     given_name: str
     family_name: str
     school_id: str
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, PersonBase):
+            raise NotImplementedError
+        return self.display_name == other.display_name
+    
+    def __lt__(self, other) -> bool:
+        if not isinstance(other, PersonBase):
+            raise NotImplementedError
+        return self.display_name < other.display_name
 
 
 class Person(PersonBase):
@@ -31,19 +43,19 @@ class TeacherBase(PersonBase):
 class Teacher(TeacherBase):
     id: str
 
-    def get_base(self) -> TeacherBase:
-        return TeacherBase(
-            display_name=self.display_name,
-            given_name=self.given_name,
-            family_name=self.family_name,
-            school_id=self.school_id,
-            lecture_hourly_pay=self.lecture_hourly_pay,
-            office_hourly_pay=self.office_hourly_pay,
-            trans_fee=self.trans_fee,
-            fixed_salary=self.fixed_salary,
-            teacher_type=self.teacher_type,
-            sub=self.sub,
-        )
+    # def get_base(self) -> TeacherBase:
+    #     return TeacherBase(
+    #         display_name=self.display_name,
+    #         given_name=self.given_name,
+    #         family_name=self.family_name,
+    #         school_id=self.school_id,
+    #         lecture_hourly_pay=self.lecture_hourly_pay,
+    #         office_hourly_pay=self.office_hourly_pay,
+    #         trans_fee=self.trans_fee,
+    #         fixed_salary=self.fixed_salary,
+    #         teacher_type=self.teacher_type,
+    #         sub=self.sub,
+    #     )
 
     @classmethod
     def create(cls, teacher_base: TeacherBase) -> "Teacher":
@@ -67,7 +79,7 @@ class Teacher(TeacherBase):
 
     @classmethod
     def from_model(cls, teacher_model: TeacherModel) -> "Teacher":
-        if teacher_model.fixed_salary == None:
+        if teacher_model.fixed_salary is None:
             teacher_model.fixed_salary = 0.0
 
         return Teacher(
@@ -83,10 +95,12 @@ class Teacher(TeacherBase):
             teacher_type=teacher_model.teacher_type,  # type: ignore
             sub=teacher_model.sub,
         )
-    
+
     @classmethod
-    def from_model_monthly(cls, monthly_timeslot_list: MonthlyAttendanceModel) -> "Teacher":
-        if monthly_timeslot_list.fixed_salary == None:
+    def from_model_monthly(
+        cls, monthly_timeslot_list: MonthlyAttendanceModel
+    ) -> "Teacher":
+        if monthly_timeslot_list.fixed_salary is None:
             monthly_timeslot_list.fixed_salary = 0.0
 
         return Teacher(
