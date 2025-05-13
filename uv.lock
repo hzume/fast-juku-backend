@@ -233,7 +233,7 @@ wheels = [
 [[package]]
 name = "fast-juku-backend"
 version = "0.2.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "boto3" },
     { name = "chardet" },

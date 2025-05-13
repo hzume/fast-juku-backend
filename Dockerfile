@@ -1,13 +1,14 @@
+ARG UV_VERSION=0.6.14
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
+
 FROM public.ecr.aws/lambda/python:3.11
 
-COPY poetry.lock pyproject.toml ${LAMBDA_TASK_ROOT}/
+COPY --from=uv /uv /uvx /bin/
+COPY pyproject.toml uv.lock ${LAMBDA_TASK_ROOT}/
 COPY api/ ${LAMBDA_TASK_ROOT}/api/
 ENV PATH /root/.local/bin:$PATH
 
-RUN curl -sSL https://install.python-poetry.org | python3 - 
-
-RUN poetry config virtualenvs.create false --local
-RUN poetry install --no-root
+RUN uv sync
 
 WORKDIR ${LAMBDA_TASK_ROOT}
 
