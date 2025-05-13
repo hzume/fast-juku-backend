@@ -1,6 +1,6 @@
 service: fast-juku-backend
 
-frameworkVersion: '3'
+frameworkVersion: '4'
 
 custom:
   table_name:
@@ -27,6 +27,7 @@ provider:
       fast_juku_backend:
         path: ./
         # Dockerfile that will be used when building the image locally (default: 'Dockerfile')
+        platform: linux/amd64 
         file: Dockerfile
         buildArgs:
           STAGE: ${sls:stage}

@@ -74,7 +74,7 @@
     "MyFunctionLogGroup": {
       "Type": "AWS::Logs::LogGroup",
       "Properties": {
-        "LogGroupName": "/aws/lambda/fast-juku-backend-dev-myFunction"
+        "LogGroupName": "/aws/lambda/fast-juku-backend-prod-myFunction"
       }
     },
     "IamRoleLambdaExecution": {
@@ -103,7 +103,7 @@
                 "-",
                 [
                   "fast-juku-backend",
-                  "dev",
+                  "prod",
                   "lambda"
                 ]
               ]
@@ -120,7 +120,7 @@
                   ],
                   "Resource": [
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/fast-juku-backend-dev*:*"
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/fast-juku-backend-prod*:*"
                     }
                   ]
                 },
@@ -131,7 +131,7 @@
                   ],
                   "Resource": [
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/fast-juku-backend-dev*:*:*"
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/fast-juku-backend-prod*:*:*"
                     }
                   ]
                 },
@@ -152,7 +152,7 @@
             "-",
             [
               "fast-juku-backend",
-              "dev",
+              "prod",
               {
                 "Ref": "AWS::Region"
               },
@@ -166,7 +166,7 @@
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
-          "ImageUri": "133507509735.dkr.ecr.ap-northeast-3.amazonaws.com/serverless-fast-juku-backend-dev@sha256:acd0e11e811103740fe88ed82b817fbf758f25ea1cd098fcafafde9b5a6d1e45"
+          "ImageUri": "133507509735.dkr.ecr.ap-northeast-3.amazonaws.com/serverless-fast-juku-backend-prod@sha256:9e56ba5bedc675729a217589efef5aadfd5273c3bbf3214d989183ba14aa4e64"
         },
         "ImageConfig": {
           "Command": [
@@ -174,13 +174,13 @@
           ]
         },
         "PackageType": "Image",
-        "FunctionName": "fast-juku-backend-dev-myFunction",
+        "FunctionName": "fast-juku-backend-prod-myFunction",
         "MemorySize": 1024,
         "Timeout": 6,
         "Environment": {
           "Variables": {
             "REGION": "ap-northeast-3",
-            "TABLE_NAME": "second_table"
+            "TABLE_NAME": "main_table"
           }
         },
         "Role": {
@@ -194,14 +194,14 @@
         "MyFunctionLogGroup"
       ]
     },
-    "MyFunctionLambdaVersioneHwEwfHjUe3uBLYN4nj9oRcRorUlVpplJ4nQxOVNgbE": {
+    "MyFunctionLambdaVersionpKf5nlesZ8ePbBdOUz1QuFq807K9lZCa3JYqEhlNU": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "MyFunctionLambdaFunction"
         },
-        "CodeSha256": "acd0e11e811103740fe88ed82b817fbf758f25ea1cd098fcafafde9b5a6d1e45"
+        "CodeSha256": "9e56ba5bedc675729a217589efef5aadfd5273c3bbf3214d989183ba14aa4e64"
       }
     },
     "MyFunctionLambdaFunctionUrl": {
@@ -249,7 +249,7 @@
     "ApiGatewayRestApi": {
       "Type": "AWS::ApiGateway::RestApi",
       "Properties": {
-        "Name": "dev-fast-juku-backend",
+        "Name": "prod-fast-juku-backend",
         "EndpointConfiguration": {
           "Types": [
             "EDGE"
@@ -319,13 +319,13 @@
         "MyFunctionLambdaPermissionApiGateway"
       ]
     },
-    "ApiGatewayDeployment1715617029493": {
+    "ApiGatewayDeployment1747148886307": {
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
         },
-        "StageName": "dev"
+        "StageName": "prod"
       },
       "DependsOn": [
         "ApiGatewayMethodProxyVarAny"
@@ -375,16 +375,16 @@
         "Ref": "ServerlessDeploymentBucket"
       },
       "Export": {
-        "Name": "sls-fast-juku-backend-dev-ServerlessDeploymentBucketName"
+        "Name": "sls-fast-juku-backend-prod-ServerlessDeploymentBucketName"
       }
     },
     "MyFunctionLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "MyFunctionLambdaVersioneHwEwfHjUe3uBLYN4nj9oRcRorUlVpplJ4nQxOVNgbE"
+        "Ref": "MyFunctionLambdaVersionpKf5nlesZ8ePbBdOUz1QuFq807K9lZCa3JYqEhlNU"
       },
       "Export": {
-        "Name": "sls-fast-juku-backend-dev-MyFunctionLambdaFunctionQualifiedArn"
+        "Name": "sls-fast-juku-backend-prod-MyFunctionLambdaFunctionQualifiedArn"
       }
     },
     "MyFunctionLambdaFunctionUrl": {
@@ -396,7 +396,7 @@
         ]
       },
       "Export": {
-        "Name": "sls-fast-juku-backend-dev-MyFunctionLambdaFunctionUrl"
+        "Name": "sls-fast-juku-backend-prod-MyFunctionLambdaFunctionUrl"
       }
     },
     "ServiceEndpoint": {
@@ -417,12 +417,12 @@
             {
               "Ref": "AWS::URLSuffix"
             },
-            "/dev"
+            "/prod"
           ]
         ]
       },
       "Export": {
-        "Name": "sls-fast-juku-backend-dev-ServiceEndpoint"
+        "Name": "sls-fast-juku-backend-prod-ServiceEndpoint"
       }
     }
   }
